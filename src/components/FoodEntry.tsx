@@ -1,21 +1,31 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { Sparkles, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Sparkles, Loader2, Flame, Dumbbell, DollarSign, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { useApp } from "@/context/AppContext";
 
-interface FoodEntryProps {
-  onAddFood: (entry: {
-    description: string;
-    calories: number;
-    protein: number;
-    cost: number;
-  }) => void;
+interface FoodEstimate {
+  description: string;
+  calories: number;
+  protein: number;
+  cost: number;
 }
 
-export function FoodEntry({ onAddFood }: FoodEntryProps) {
+export function FoodEntry() {
+  const { addFoodLog } = useApp();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [estimate, setEstimate] = useState<FoodEstimate | null>(null);
 
   const handleSubmit = async () => {
     if (!input.trim()) {
@@ -25,20 +35,33 @@ export function FoodEntry({ onAddFood }: FoodEntryProps) {
 
     setIsLoading(true);
 
-    // Simulate AI processing with mock data for now
-    // This will be replaced with actual AI call when Cloud is enabled
+    // Simulate AI processing
     setTimeout(() => {
       const mockEstimates = estimateNutrition(input);
-      onAddFood({
+      setEstimate({
         description: input,
         ...mockEstimates,
       });
-      setInput("");
+      setShowConfirm(true);
       setIsLoading(false);
+    }, 1000);
+  };
+
+  const handleConfirm = () => {
+    if (estimate) {
+      addFoodLog(estimate);
       toast.success("Food logged!", {
-        description: `${mockEstimates.protein}g protein • $${mockEstimates.cost.toFixed(2)}`,
+        description: `${estimate.protein}g protein • $${estimate.cost.toFixed(2)}`,
       });
-    }, 1500);
+      setInput("");
+      setEstimate(null);
+      setShowConfirm(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowConfirm(false);
+    setEstimate(null);
   };
 
   // Simple estimation logic based on keywords
@@ -161,7 +184,7 @@ export function FoodEntry({ onAddFood }: FoodEntryProps) {
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
-              Log Food
+              Analyze Food
             </>
           )}
         </Button>
@@ -179,6 +202,66 @@ export function FoodEntry({ onAddFood }: FoodEntryProps) {
           <li>• Protein powder: ~$0.80 → 25g protein</li>
         </ul>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <DialogContent className="bg-card border-border max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Confirm Entry
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Here's what I estimated for your meal:
+            </DialogDescription>
+          </DialogHeader>
+
+          {estimate && (
+            <div className="space-y-4 py-4">
+              <div className="cyber-card p-3 bg-muted/30">
+                <p className="text-sm text-foreground font-medium">
+                  "{estimate.description}"
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="cyber-card p-3 text-center">
+                  <Flame className="w-5 h-5 text-progress-calories mx-auto mb-1" />
+                  <p className="text-lg font-bold text-progress-calories">
+                    {estimate.calories}
+                  </p>
+                  <p className="text-xs text-muted-foreground">calories</p>
+                </div>
+                <div className="cyber-card p-3 text-center">
+                  <Dumbbell className="w-5 h-5 text-progress-protein mx-auto mb-1" />
+                  <p className="text-lg font-bold text-progress-protein">
+                    {estimate.protein}g
+                  </p>
+                  <p className="text-xs text-muted-foreground">protein</p>
+                </div>
+                <div className="cyber-card p-3 text-center">
+                  <DollarSign className="w-5 h-5 text-progress-money mx-auto mb-1" />
+                  <p className="text-lg font-bold text-progress-money">
+                    ${estimate.cost.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">cost</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button variant="outline" onClick={handleCancel} className="flex-1">
+              <X className="w-4 h-4" />
+              Cancel
+            </Button>
+            <Button variant="neon" onClick={handleConfirm} className="flex-1">
+              <Check className="w-4 h-4" />
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

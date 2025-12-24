@@ -7,31 +7,8 @@ import { ValueFoods } from "@/components/ValueFoods";
 import { MenuPage } from "@/components/MenuPage";
 import { Zap } from "lucide-react";
 
-interface FoodLog {
-  description: string;
-  calories: number;
-  protein: number;
-  cost: number;
-}
-
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [foodLogs, setFoodLogs] = useState<FoodLog[]>([]);
-
-  // Calculate totals from food logs
-  const totals = foodLogs.reduce(
-    (acc, log) => ({
-      calories: acc.calories + log.calories,
-      protein: acc.protein + log.protein,
-      cost: acc.cost + log.cost,
-    }),
-    { calories: 0, protein: 0, cost: 0 }
-  );
-
-  const handleAddFood = (entry: FoodLog) => {
-    setFoodLogs((prev) => [...prev, entry]);
-    setActiveTab("dashboard");
-  };
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -56,17 +33,8 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-md mx-auto">
-        {activeTab === "dashboard" && (
-          <Dashboard
-            calories={totals.calories}
-            caloriesGoal={2000}
-            protein={totals.protein}
-            proteinGoal={150}
-            moneySpent={totals.cost}
-            moneyBudget={15}
-          />
-        )}
-        {activeTab === "add" && <FoodEntry onAddFood={handleAddFood} />}
+        {activeTab === "dashboard" && <Dashboard />}
+        {activeTab === "add" && <FoodEntry />}
         {activeTab === "foods" && <ValueFoods />}
         {activeTab === "menu" && <MenuPage />}
       </main>

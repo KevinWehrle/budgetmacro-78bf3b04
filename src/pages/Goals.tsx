@@ -1,19 +1,36 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Target, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useApp } from "@/context/AppContext";
 
 export default function Goals() {
-  const [caloriesGoal, setCaloriesGoal] = useState("2000");
-  const [proteinGoal, setProteinGoal] = useState("150");
-  const [budgetGoal, setBudgetGoal] = useState("15");
+  const { goals, setGoals } = useApp();
+  const navigate = useNavigate();
+  
+  const [caloriesGoal, setCaloriesGoal] = useState(goals.calories.toString());
+  const [proteinGoal, setProteinGoal] = useState(goals.protein.toString());
+  const [budgetGoal, setBudgetGoal] = useState(goals.budget.toString());
+
+  useEffect(() => {
+    setCaloriesGoal(goals.calories.toString());
+    setProteinGoal(goals.protein.toString());
+    setBudgetGoal(goals.budget.toString());
+  }, [goals]);
 
   const handleSave = () => {
+    const newGoals = {
+      calories: parseInt(caloriesGoal) || 2000,
+      protein: parseInt(proteinGoal) || 150,
+      budget: parseFloat(budgetGoal) || 15,
+    };
+    setGoals(newGoals);
     toast.success("Goals saved!", {
-      description: `${caloriesGoal} cal • ${proteinGoal}g protein • $${budgetGoal}/day`,
+      description: `${newGoals.calories} cal • ${newGoals.protein}g protein • $${newGoals.budget}/day`,
     });
+    navigate("/");
   };
 
   return (

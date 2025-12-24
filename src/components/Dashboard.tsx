@@ -1,23 +1,22 @@
 import { ProgressRing } from "./ProgressRing";
-import { Zap } from "lucide-react";
+import { Zap, Trash2 } from "lucide-react";
+import { useApp } from "@/context/AppContext";
+import { Button } from "./ui/button";
 
-interface DashboardProps {
-  calories: number;
-  caloriesGoal: number;
-  protein: number;
-  proteinGoal: number;
-  moneySpent: number;
-  moneyBudget: number;
-}
+export function Dashboard() {
+  const { todayTotals, goals, foodLogs, deleteFoodLog } = useApp();
 
-export function Dashboard({
-  calories,
-  caloriesGoal,
-  protein,
-  proteinGoal,
-  moneySpent,
-  moneyBudget,
-}: DashboardProps) {
+  // Get today's logs only
+  const todayLogs = foodLogs.filter((log) => {
+    const today = new Date();
+    const logDate = new Date(log.timestamp);
+    return (
+      logDate.getDate() === today.getDate() &&
+      logDate.getMonth() === today.getMonth() &&
+      logDate.getFullYear() === today.getFullYear()
+    );
+  });
+
   return (
     <div className="px-4 py-6 slide-up">
       <div className="flex items-center gap-2 mb-6">
@@ -30,24 +29,24 @@ export function Dashboard({
       <div className="cyber-card p-6">
         <div className="flex justify-around items-center">
           <ProgressRing
-            progress={calories}
-            max={caloriesGoal}
+            progress={todayTotals.calories}
+            max={goals.calories}
             label="Calories"
-            value={`${calories}`}
+            value={`${todayTotals.calories}`}
             variant="calories"
           />
           <ProgressRing
-            progress={protein}
-            max={proteinGoal}
+            progress={todayTotals.protein}
+            max={goals.protein}
             label="Protein"
-            value={`${protein}g`}
+            value={`${todayTotals.protein}g`}
             variant="protein"
           />
           <ProgressRing
-            progress={moneySpent}
-            max={moneyBudget}
+            progress={todayTotals.cost}
+            max={goals.budget}
             label="Spent"
-            value={`$${moneySpent.toFixed(2)}`}
+            value={`$${todayTotals.cost.toFixed(2)}`}
             variant="money"
           />
         </div>
@@ -57,19 +56,19 @@ export function Dashboard({
             <div>
               <p className="text-xs text-muted-foreground">Goal</p>
               <p className="text-sm font-semibold text-progress-calories">
-                {caloriesGoal} cal
+                {goals.calories} cal
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Goal</p>
               <p className="text-sm font-semibold text-progress-protein">
-                {proteinGoal}g
+                {goals.protein}g
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Budget</p>
               <p className="text-sm font-semibold text-progress-money">
-                ${moneyBudget.toFixed(2)}
+                ${goals.budget.toFixed(2)}
               </p>
             </div>
           </div>
@@ -80,11 +79,37 @@ export function Dashboard({
         <h3 className="text-sm font-semibold text-muted-foreground mb-3">
           Recent Entries
         </h3>
-        <div className="space-y-2 text-sm">
-          <p className="text-muted-foreground/60 text-center py-4">
+        {todayLogs.length === 0 ? (
+          <p className="text-muted-foreground/60 text-center py-4 text-sm">
             Add your first meal to start tracking!
           </p>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            {todayLogs.slice(0, 5).map((log) => (
+              <div
+                key={log.id}
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {log.description}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {log.calories} cal • {log.protein}g protein • ${log.cost.toFixed(2)}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                  onClick={() => deleteFoodLog(log.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
