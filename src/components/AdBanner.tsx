@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 declare global {
   interface Window {
@@ -7,41 +7,42 @@ declare global {
 }
 
 export function AdBanner() {
-  useEffect(() => {
-    // Load AdSense script
-    const script = document.createElement('script');
-    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7627780184759005';
-    script.async = true;
-    script.crossOrigin = 'anonymous';
-    document.head.appendChild(script);
+  const adRef = useRef<HTMLModElement>(null);
+  const adInitialized = useRef(false);
 
-    return () => {
-      // Cleanup script on unmount
-      const existingScript = document.querySelector(`script[src*="pagead2.googlesyndication.com"]`);
-      if (existingScript) {
-        existingScript.remove();
+  useEffect(() => {
+    // Only initialize the ad once
+    if (adInitialized.current) return;
+    
+    // Wait for AdSense script to load, then push the ad
+    const initAd = () => {
+      try {
+        if (adRef.current && !adInitialized.current) {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+          adInitialized.current = true;
+        }
+      } catch (e) {
+        // AdSense may throw errors in development or if blocked
+        console.log('AdSense initialization skipped');
       }
     };
-  }, []);
 
-  useEffect(() => {
-    // Initialize ad when component mounts
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (e) {
-      console.error('AdSense error:', e);
-    }
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(initAd, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="fixed left-0 right-0 z-40 bg-muted/80 backdrop-blur-sm border-t border-border/30" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}>
       <div className="flex items-center justify-center h-14 px-4 max-w-md mx-auto">
         <ins
+          ref={adRef}
           className="adsbygoogle"
           style={{ display: 'block', width: '100%', height: '50px' }}
           data-ad-client="ca-pub-7627780184759005"
           data-ad-slot="auto"
-          data-ad-format="auto"
+          data-ad-format="horizontal"
           data-full-width-responsive="true"
         />
       </div>
