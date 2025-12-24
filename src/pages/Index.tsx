@@ -6,7 +6,7 @@ import { FoodEntry } from "@/components/FoodEntry";
 import { ValueFoods } from "@/components/ValueFoods";
 import { History } from "@/components/History";
 import { MenuPage } from "@/components/MenuPage";
-import { Zap } from "lucide-react";
+
 import { useApp } from "@/context/AppContext";
 
 const Index = () => {
@@ -23,24 +23,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50">
-        <div className="flex items-center justify-between px-4 h-14 max-w-md mx-auto">
-          <div className="flex items-center gap-2">
-            <Zap className="w-6 h-6 text-primary" />
-            <span className="font-bold text-lg">
-              Budget<span className="text-primary neon-glow-text">Macro</span>
-            </span>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
-          </div>
-        </div>
-      </header>
+      {/* Status bar spacer */}
+      <div className="sticky top-0 z-50 bg-background h-[env(safe-area-inset-top,0px)]" />
 
       {/* Main Content */}
       <main className="max-w-md mx-auto">
