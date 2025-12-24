@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { Dashboard } from "@/components/Dashboard";
 import { FoodEntry } from "@/components/FoodEntry";
@@ -9,7 +10,15 @@ import { MenuPage } from "@/components/MenuPage";
 import { useApp } from "@/context/AppContext";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "dashboard");
+
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
   const { settings } = useApp();
 
   useEffect(() => {

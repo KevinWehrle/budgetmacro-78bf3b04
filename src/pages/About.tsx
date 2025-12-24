@@ -7,7 +7,7 @@ export default function About() {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50 pt-safe">
         <div className="flex items-center gap-3 px-4 h-16 max-w-md mx-auto">
           <Link
-            to="/"
+            to="/?tab=menu"
             className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
