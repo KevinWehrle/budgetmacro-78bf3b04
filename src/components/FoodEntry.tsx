@@ -46,17 +46,7 @@ export function FoodEntry() {
 
       if (error) {
         console.error('Edge function error:', error);
-        // Check for authentication error
-        if (error.message?.includes('401') || error.message?.includes('JWT')) {
-          toast.info("Using local estimates", { 
-            description: "Sign in to enable AI-powered analysis" 
-          });
-        } else {
-          toast.info("Using local estimates", { 
-            description: "AI unavailable, using built-in estimation" 
-          });
-        }
-        // Fall back to local estimation
+        // Fall back to local estimation silently
         const fallbackEstimates = estimateNutritionFallback(input);
         setEstimate({
           description: input,
@@ -64,14 +54,11 @@ export function FoodEntry() {
         });
       } else if (data.error) {
         console.error('AI error:', data.error);
-        // Fall back to local estimation
+        // Fall back to local estimation silently
         const fallbackEstimates = estimateNutritionFallback(input);
         setEstimate({
           description: input,
           ...fallbackEstimates,
-        });
-        toast.info("Using local estimates", { 
-          description: data.error 
         });
       } else {
         // Use AI-generated estimates
@@ -87,14 +74,11 @@ export function FoodEntry() {
       setShowConfirm(true);
     } catch (err) {
       console.error('Request error:', err);
-      // Fall back to local estimation
+      // Fall back to local estimation silently
       const fallbackEstimates = estimateNutritionFallback(input);
       setEstimate({
         description: input,
         ...fallbackEstimates,
-      });
-      toast.info("Using local estimates", { 
-        description: "Could not reach AI service" 
       });
       setCustomCost("");
       setShowConfirm(true);
