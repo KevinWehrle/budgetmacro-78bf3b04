@@ -4,6 +4,7 @@ import { AdBanner } from "@/components/AdBanner";
 import { Dashboard } from "@/components/Dashboard";
 import { FoodEntry } from "@/components/FoodEntry";
 import { ValueFoods } from "@/components/ValueFoods";
+import { History } from "@/components/History";
 import { MenuPage } from "@/components/MenuPage";
 import { Zap } from "lucide-react";
 import { useApp } from "@/context/AppContext";
@@ -46,6 +47,7 @@ const Index = () => {
         {activeTab === "dashboard" && <Dashboard />}
         {activeTab === "add" && <FoodEntry />}
         {activeTab === "foods" && <ValueFoods />}
+        {activeTab === "history" && <History />}
         {activeTab === "menu" && <MenuPage />}
       </main>
 

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { format, startOfDay, isSameDay } from "date-fns";
 
 interface FoodLog {
   id: string;
@@ -20,6 +21,16 @@ interface AppSettings {
   darkMode: boolean;
 }
 
+interface DayHistory {
+  date: string;
+  calories: number;
+  protein: number;
+  cost: number;
+  goalCalories: number;
+  goalProtein: number;
+  goalBudget: number;
+}
+
 interface AppContextType {
   foodLogs: FoodLog[];
   addFoodLog: (log: Omit<FoodLog, "id" | "timestamp">) => void;
@@ -30,6 +41,7 @@ interface AppContextType {
   settings: AppSettings;
   setSettings: (settings: AppSettings) => void;
   todayTotals: { calories: number; protein: number; cost: number };
+  history: DayHistory[];
 }
 
 const defaultGoals: Goals = {
@@ -68,6 +80,65 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : defaultSettings;
   });
 
+  const [history, setHistory] = useState<DayHistory[]>(() => {
+    const saved = localStorage.getItem("macromoney-history");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [lastCheckedDate, setLastCheckedDate] = useState<string>(() => {
+    const saved = localStorage.getItem("macromoney-last-date");
+    return saved || format(new Date(), "yyyy-MM-dd");
+  });
+
+  // Check for day change and archive previous day's data
+  useEffect(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    
+    if (lastCheckedDate !== today) {
+      // Archive yesterday's data if there were any logs
+      const yesterdayLogs = foodLogs.filter((log) => {
+        const logDate = format(new Date(log.timestamp), "yyyy-MM-dd");
+        return logDate === lastCheckedDate;
+      });
+
+      if (yesterdayLogs.length > 0) {
+        const totals = yesterdayLogs.reduce(
+          (acc, log) => ({
+            calories: acc.calories + log.calories,
+            protein: acc.protein + log.protein,
+            cost: acc.cost + log.cost,
+          }),
+          { calories: 0, protein: 0, cost: 0 }
+        );
+
+        const newHistoryEntry: DayHistory = {
+          date: lastCheckedDate,
+          ...totals,
+          goalCalories: goals.calories,
+          goalProtein: goals.protein,
+          goalBudget: goals.budget,
+        };
+
+        setHistory((prev) => {
+          const exists = prev.some((h) => h.date === lastCheckedDate);
+          if (exists) return prev;
+          return [newHistoryEntry, ...prev];
+        });
+      }
+
+      // Clear today's logs (keep only non-yesterday logs for history reference)
+      setFoodLogs((prev) =>
+        prev.filter((log) => {
+          const logDate = format(new Date(log.timestamp), "yyyy-MM-dd");
+          return logDate === today;
+        })
+      );
+
+      setLastCheckedDate(today);
+      localStorage.setItem("macromoney-last-date", today);
+    }
+  }, [lastCheckedDate, foodLogs, goals]);
+
   // Persist to localStorage
   useEffect(() => {
     localStorage.setItem("macromoney-logs", JSON.stringify(foodLogs));
@@ -81,16 +152,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("macromoney-settings", JSON.stringify(settings));
   }, [settings]);
 
+  useEffect(() => {
+    localStorage.setItem("macromoney-history", JSON.stringify(history));
+  }, [history]);
+
   // Calculate today's totals
   const todayTotals = foodLogs
     .filter((log) => {
       const today = new Date();
       const logDate = new Date(log.timestamp);
-      return (
-        logDate.getDate() === today.getDate() &&
-        logDate.getMonth() === today.getMonth() &&
-        logDate.getFullYear() === today.getFullYear()
-      );
+      return isSameDay(logDate, today);
     })
     .reduce(
       (acc, log) => ({
@@ -138,6 +209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         settings,
         setSettings,
         todayTotals,
+        history,
       }}
     >
       {children}

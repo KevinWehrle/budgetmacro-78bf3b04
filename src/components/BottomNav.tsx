@@ -1,4 +1,4 @@
-import { Home, PlusCircle, List, Menu } from "lucide-react";
+import { Home, PlusCircle, List, Calendar, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavProps {
@@ -8,8 +8,9 @@ interface BottomNavProps {
 
 const navItems = [
   { id: "dashboard", icon: Home, label: "Home" },
-  { id: "add", icon: PlusCircle, label: "Add Food" },
-  { id: "foods", icon: List, label: "Value Foods" },
+  { id: "add", icon: PlusCircle, label: "Add" },
+  { id: "foods", icon: List, label: "Foods" },
+  { id: "history", icon: Calendar, label: "History" },
   { id: "menu", icon: Menu, label: "Menu" },
 ];
 
@@ -24,7 +25,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={cn(
-                "flex flex-col items-center gap-1 px-4 py-2 transition-all duration-200",
+                "flex flex-col items-center gap-1 px-3 py-2 transition-all duration-200",
                 isActive
                   ? "text-primary neon-glow-text"
                   : "text-muted-foreground hover:text-foreground"
