@@ -1,11 +1,28 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Allowed origins for CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'http://localhost:8080',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  // Allow Lovable preview domains and localhost
+  const isAllowed = allowedOrigins.includes(origin) || 
+                    origin.endsWith('.lovable.app') ||
+                    origin.endsWith('.lovableproject.com');
+  
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : allowedOrigins[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -14,9 +31,26 @@ serve(async (req) => {
   try {
     const { foodDescription } = await req.json();
 
-    if (!foodDescription) {
+    // Input validation
+    if (!foodDescription || typeof foodDescription !== 'string') {
       return new Response(
         JSON.stringify({ error: 'Food description is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const trimmedInput = foodDescription.trim();
+    
+    if (trimmedInput.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Food description cannot be empty' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (trimmedInput.length > 500) {
+      return new Response(
+        JSON.stringify({ error: 'Food description too long (max 500 characters)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -30,7 +64,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Analyzing food:', foodDescription);
+    console.log('Analyzing food:', trimmedInput);
 
     const systemPrompt = `You are a nutrition and food cost expert. Analyze the food description provided and return accurate nutritional information and estimated cost.
 
@@ -62,7 +96,7 @@ Only respond with the JSON object, no other text.`;
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Analyze this food: "${foodDescription}"` }
+          { role: 'user', content: `Analyze this food: "${trimmedInput}"` }
         ],
       }),
     });
