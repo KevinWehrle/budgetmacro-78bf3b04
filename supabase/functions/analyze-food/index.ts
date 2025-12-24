@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Allowed origins for CORS
 const allowedOrigins = [
@@ -20,6 +21,10 @@ function getCorsHeaders(req: Request) {
   };
 }
 
+// Rate limiting constants
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_REQUESTS_PER_WINDOW = 50; // 50 requests per hour per user
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   
@@ -29,6 +34,94 @@ serve(async (req) => {
   }
 
   try {
+    // Validate authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.log('Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase client with user's auth context
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Validate user
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      console.log('Invalid user token:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Authenticated user:', user.id);
+
+    // Check rate limiting
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MS);
+
+    // Get or create rate limit record using service role for reliability
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: rateLimitData, error: rateLimitError } = await serviceClient
+      .from('api_rate_limits')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('endpoint', 'analyze-food')
+      .maybeSingle();
+
+    if (rateLimitError) {
+      console.error('Rate limit check error:', rateLimitError);
+      // Continue without rate limiting if there's a DB error
+    } else {
+      if (rateLimitData) {
+        const windowStartTime = new Date(rateLimitData.window_start);
+        
+        if (windowStartTime > windowStart) {
+          // Still within the rate limit window
+          if (rateLimitData.request_count >= MAX_REQUESTS_PER_WINDOW) {
+            console.log('Rate limit exceeded for user:', user.id);
+            return new Response(
+              JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+              { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
+          // Increment counter
+          await serviceClient
+            .from('api_rate_limits')
+            .update({ request_count: rateLimitData.request_count + 1 })
+            .eq('id', rateLimitData.id);
+        } else {
+          // Window expired, reset counter
+          await serviceClient
+            .from('api_rate_limits')
+            .update({ request_count: 1, window_start: now.toISOString() })
+            .eq('id', rateLimitData.id);
+        }
+      } else {
+        // Create new rate limit record
+        await serviceClient
+          .from('api_rate_limits')
+          .insert({
+            user_id: user.id,
+            endpoint: 'analyze-food',
+            request_count: 1,
+            window_start: now.toISOString()
+          });
+      }
+    }
+
     const { foodDescription } = await req.json();
 
     // Input validation
@@ -64,7 +157,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Analyzing food:', trimmedInput);
+    console.log('Analyzing food for user:', user.id, '- Input:', trimmedInput.substring(0, 50));
 
     const systemPrompt = `You are a nutrition and food cost expert. Analyze the food description provided and return accurate nutritional information and estimated cost.
 
@@ -103,7 +196,7 @@ Only respond with the JSON object, no other text.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      console.error('AI gateway error:', response.status);
       
       if (response.status === 429) {
         return new Response(
@@ -135,7 +228,7 @@ Only respond with the JSON object, no other text.`;
       );
     }
 
-    console.log('AI response:', content);
+    console.log('AI analysis complete for user:', user.id);
 
     // Parse the JSON from the AI response
     let nutritionData;
@@ -144,7 +237,7 @@ Only respond with the JSON object, no other text.`;
       const cleanedContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       nutritionData = JSON.parse(cleanedContent);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError, 'Content:', content);
+      console.error('Failed to parse AI response');
       return new Response(
         JSON.stringify({ error: 'Failed to parse nutrition data' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -158,16 +251,16 @@ Only respond with the JSON object, no other text.`;
       cost: Math.round((Number(nutritionData.cost) || 3.00) * 100) / 100,
     };
 
-    console.log('Returning nutrition data:', result);
+    console.log('Returning nutrition data for user:', user.id);
 
     return new Response(
       JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error analyzing food:', error);
+    console.error('Error analyzing food:', error instanceof Error ? error.message : 'Unknown error');
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'An error occurred while analyzing food' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
