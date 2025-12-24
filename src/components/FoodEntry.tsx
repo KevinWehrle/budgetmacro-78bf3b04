@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
+import { Input } from "./ui/input";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ export function FoodEntry() {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [estimate, setEstimate] = useState<FoodEstimate | null>(null);
+  const [customCost, setCustomCost] = useState("");
 
   const handleSubmit = async () => {
     if (!input.trim()) {
@@ -42,6 +44,7 @@ export function FoodEntry() {
         description: input,
         ...mockEstimates,
       });
+      setCustomCost("");
       setShowConfirm(true);
       setIsLoading(false);
     }, 1000);
@@ -49,12 +52,17 @@ export function FoodEntry() {
 
   const handleConfirm = () => {
     if (estimate) {
-      addFoodLog(estimate);
+      const finalCost = customCost.trim() ? parseFloat(customCost) : estimate.cost;
+      addFoodLog({
+        ...estimate,
+        cost: isNaN(finalCost) ? estimate.cost : finalCost,
+      });
       toast.success("Food logged!", {
-        description: `${estimate.protein}g protein • $${estimate.cost.toFixed(2)}`,
+        description: `${estimate.protein}g protein • $${(isNaN(finalCost) ? estimate.cost : finalCost).toFixed(2)}`,
       });
       setInput("");
       setEstimate(null);
+      setCustomCost("");
       setShowConfirm(false);
     }
   };
@@ -62,90 +70,135 @@ export function FoodEntry() {
   const handleCancel = () => {
     setShowConfirm(false);
     setEstimate(null);
+    setCustomCost("");
   };
 
-  // Simple estimation logic based on keywords
+  // More realistic estimation logic based on keywords
   const estimateNutrition = (text: string) => {
     const lower = text.toLowerCase();
     let calories = 0;
     let protein = 0;
     let cost = 0;
 
-    // Egg detection
+    // Egg detection (grocery: ~$0.25-0.40 per egg)
     const eggMatch = lower.match(/(\d+)?\s*eggs?/);
     if (eggMatch) {
       const count = parseInt(eggMatch[1]) || 1;
       calories += count * 70;
       protein += count * 6;
-      cost += count * 0.3;
+      cost += count * 0.35;
     }
 
-    // Chicken breast detection
+    // Chicken breast detection (~$3.50/lb, 6oz portion)
     if (lower.includes("chicken breast") || lower.includes("chicken")) {
       const portions = lower.includes("2") ? 2 : 1;
       calories += portions * 165;
       protein += portions * 31;
-      cost += portions * 1.5;
+      cost += portions * 2.00;
     }
 
-    // Tuna detection
+    // Canned tuna (~$1.50-2.00 per can)
     if (lower.includes("tuna")) {
       const cans = lower.includes("2") ? 2 : 1;
       calories += cans * 100;
       protein += cans * 22;
-      cost += cans * 1.0;
+      cost += cans * 1.75;
     }
 
-    // Greek yogurt
+    // Greek yogurt (~$1.25-1.50 per container)
     if (lower.includes("greek yogurt") || lower.includes("yogurt")) {
       calories += 100;
       protein += 17;
-      cost += 1.0;
+      cost += 1.40;
     }
 
-    // Protein shake/powder
+    // Protein shake/powder (~$1.00-1.50 per scoop)
     if (lower.includes("protein shake") || lower.includes("protein powder") || lower.includes("whey")) {
       calories += 120;
       protein += 25;
-      cost += 0.8;
+      cost += 1.25;
     }
 
-    // Milk
+    // Milk (~$4.50/gallon, $0.30 per cup)
     if (lower.includes("milk")) {
       calories += 150;
       protein += 8;
-      cost += 0.5;
+      cost += 0.35;
     }
 
-    // Rice
+    // Rice (~$0.15-0.25 per cooked cup)
     if (lower.includes("rice")) {
       calories += 200;
       protein += 4;
-      cost += 0.3;
+      cost += 0.20;
     }
 
-    // Beans
+    // Beans/lentils (~$0.40-0.60 per cup cooked)
     if (lower.includes("beans") || lower.includes("lentils")) {
       calories += 225;
       protein += 15;
-      cost += 0.5;
+      cost += 0.50;
     }
 
-    // Peanut butter
+    // Peanut butter (~$0.25 per 2 tbsp)
     if (lower.includes("peanut butter")) {
       calories += 190;
       protein += 7;
-      cost += 0.4;
+      cost += 0.30;
+    }
+
+    // Oatmeal (~$0.20 per serving)
+    if (lower.includes("oatmeal") || lower.includes("oats")) {
+      calories += 150;
+      protein += 5;
+      cost += 0.25;
+    }
+
+    // Ground beef (~$5/lb, 4oz portion)
+    if (lower.includes("ground beef") || lower.includes("beef")) {
+      calories += 280;
+      protein += 20;
+      cost += 1.75;
+    }
+
+    // Cottage cheese (~$3.50 per container, $0.80 per serving)
+    if (lower.includes("cottage cheese")) {
+      calories += 110;
+      protein += 14;
+      cost += 0.85;
+    }
+
+    // Bread (~$0.20 per slice)
+    if (lower.includes("bread") || lower.includes("toast")) {
+      const slices = lower.includes("2") ? 2 : 1;
+      calories += slices * 80;
+      protein += slices * 3;
+      cost += slices * 0.20;
+    }
+
+    // Fast food / restaurant detection (higher cost)
+    if (lower.includes("mcdonald") || lower.includes("burger king") || lower.includes("wendy") || 
+        lower.includes("chipotle") || lower.includes("subway") || lower.includes("fast food")) {
+      calories += 600;
+      protein += 25;
+      cost += 9.00;
+    }
+
+    // Restaurant/dining out
+    if (lower.includes("restaurant") || lower.includes("ate out") || lower.includes("takeout")) {
+      calories += 700;
+      protein += 30;
+      cost += 15.00;
     }
 
     // Default if nothing matched
     if (calories === 0) {
-      calories = 200;
-      protein = 10;
-      cost = 2.0;
+      calories = 250;
+      protein = 12;
+      cost = 3.00;
     }
 
-    return { calories, protein, cost };
+    return { calories, protein, cost: Math.round(cost * 100) / 100 };
   };
 
   return (
@@ -234,7 +287,25 @@ export function FoodEntry() {
                   <p className="text-lg font-bold text-progress-money">
                     ${estimate.cost.toFixed(2)}
                   </p>
-                  <p className="text-xs text-muted-foreground">cost</p>
+                  <p className="text-xs text-muted-foreground">estimated</p>
+                </div>
+              </div>
+
+              <div className="cyber-card p-3 bg-muted/20">
+                <label className="text-xs text-muted-foreground block mb-2">
+                  Know the exact price? Enter it here:
+                </label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={estimate.cost.toFixed(2)}
+                    value={customCost}
+                    onChange={(e) => setCustomCost(e.target.value)}
+                    className="pl-8 bg-background/50 border-border/50 focus:border-primary"
+                  />
                 </div>
               </div>
             </div>
