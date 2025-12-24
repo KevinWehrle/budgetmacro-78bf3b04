@@ -14,7 +14,7 @@ export default function About() {
           </Link>
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
-            <h1 className="font-semibold">About MacroMoney</h1>
+            <h1 className="font-semibold">About BudgetMacro</h1>
           </div>
         </div>
       </header>
@@ -25,7 +25,7 @@ export default function About() {
             <Zap className="w-10 h-10 text-primary" />
           </div>
           <h2 className="text-2xl font-bold text-foreground">
-            Macro<span className="text-primary neon-glow-text">Money</span>
+            Budget<span className="text-primary neon-glow-text">Macro</span>
           </h2>
           <p className="text-muted-foreground mt-2">
             Track macros. Save money. Get gains.
@@ -39,7 +39,7 @@ export default function About() {
               <h3 className="font-semibold text-foreground">Our Mission</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              We built MacroMoney for college students who want to hit their protein goals without breaking the bank. Because being broke shouldn't mean being weak.
+              We built BudgetMacro for college students who want to hit their protein goals without breaking the bank. Because being broke shouldn't mean being weak.
             </p>
           </div>
 

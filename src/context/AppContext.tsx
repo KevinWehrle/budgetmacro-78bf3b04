@@ -59,7 +59,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [foodLogs, setFoodLogs] = useState<FoodLog[]>(() => {
-    const saved = localStorage.getItem("macromoney-logs");
+    const saved = localStorage.getItem("budgetmacro-logs");
     if (saved) {
       const parsed = JSON.parse(saved);
       return parsed.map((log: FoodLog) => ({
@@ -71,22 +71,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   const [goals, setGoalsState] = useState<Goals>(() => {
-    const saved = localStorage.getItem("macromoney-goals");
+    const saved = localStorage.getItem("budgetmacro-goals");
     return saved ? JSON.parse(saved) : defaultGoals;
   });
 
   const [settings, setSettingsState] = useState<AppSettings>(() => {
-    const saved = localStorage.getItem("macromoney-settings");
+    const saved = localStorage.getItem("budgetmacro-settings");
     return saved ? JSON.parse(saved) : defaultSettings;
   });
 
   const [history, setHistory] = useState<DayHistory[]>(() => {
-    const saved = localStorage.getItem("macromoney-history");
+    const saved = localStorage.getItem("budgetmacro-history");
     return saved ? JSON.parse(saved) : [];
   });
 
   const [lastCheckedDate, setLastCheckedDate] = useState<string>(() => {
-    const saved = localStorage.getItem("macromoney-last-date");
+    const saved = localStorage.getItem("budgetmacro-last-date");
     return saved || format(new Date(), "yyyy-MM-dd");
   });
 
@@ -135,25 +135,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       );
 
       setLastCheckedDate(today);
-      localStorage.setItem("macromoney-last-date", today);
+      localStorage.setItem("budgetmacro-last-date", today);
     }
   }, [lastCheckedDate, foodLogs, goals]);
 
   // Persist to localStorage
   useEffect(() => {
-    localStorage.setItem("macromoney-logs", JSON.stringify(foodLogs));
+    localStorage.setItem("budgetmacro-logs", JSON.stringify(foodLogs));
   }, [foodLogs]);
 
   useEffect(() => {
-    localStorage.setItem("macromoney-goals", JSON.stringify(goals));
+    localStorage.setItem("budgetmacro-goals", JSON.stringify(goals));
   }, [goals]);
 
   useEffect(() => {
-    localStorage.setItem("macromoney-settings", JSON.stringify(settings));
+    localStorage.setItem("budgetmacro-settings", JSON.stringify(settings));
   }, [settings]);
 
   useEffect(() => {
-    localStorage.setItem("macromoney-history", JSON.stringify(history));
+    localStorage.setItem("budgetmacro-history", JSON.stringify(history));
   }, [history]);
 
   // Calculate today's totals
