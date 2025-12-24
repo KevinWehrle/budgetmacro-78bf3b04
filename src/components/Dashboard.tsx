@@ -1,10 +1,22 @@
+import { useState } from "react";
 import { ProgressRing } from "./ProgressRing";
 import { Zap, Trash2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Button } from "./ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 
 export function Dashboard() {
   const { todayTotals, goals, foodLogs, deleteFoodLog } = useApp();
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; description: string } | null>(null);
 
   // Get today's logs only
   const todayLogs = foodLogs.filter((log) => {
@@ -16,6 +28,13 @@ export function Dashboard() {
       logDate.getFullYear() === today.getFullYear()
     );
   });
+
+  const handleDelete = () => {
+    if (deleteConfirm) {
+      deleteFoodLog(deleteConfirm.id);
+      setDeleteConfirm(null);
+    }
+  };
 
   return (
     <div className="px-4 py-6 slide-up">
@@ -102,7 +121,7 @@ export function Dashboard() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                  onClick={() => deleteFoodLog(log.id)}
+                  onClick={() => setDeleteConfirm({ id: log.id, description: log.description })}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -111,6 +130,23 @@ export function Dashboard() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteConfirm?.description}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
