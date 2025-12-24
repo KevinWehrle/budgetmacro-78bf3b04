@@ -149,59 +149,49 @@ export function FoodEntry() {
   };
 
   return (
-    <div className="px-4 py-6 slide-up">
-      <div className="flex items-center gap-2 mb-6">
-        <Sparkles className="w-6 h-6 text-primary animate-pulse-glow" />
-        <h1 className="text-2xl font-bold text-foreground">
-          AI <span className="text-primary neon-glow-text">Food Entry</span>
-        </h1>
+    <div className="px-4 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
+      <div className="w-full max-w-md slide-up">
+        <div className="flex items-center gap-2 mb-6 justify-center">
+          <Sparkles className="w-6 h-6 text-primary animate-pulse-glow" />
+          <h1 className="text-2xl font-bold text-foreground">
+            AI <span className="text-primary neon-glow-text">Food Entry</span>
+          </h1>
+        </div>
+
+        <div className="cyber-card p-4">
+          <p className="text-sm text-muted-foreground mb-4 text-center">
+            Describe what you ate and I'll estimate the protein and cost for you.
+          </p>
+
+          <Textarea
+            placeholder="e.g., 3 eggs, a chicken breast with rice, protein shake..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="min-h-[120px] bg-background/50 border-border/50 focus:border-primary resize-none mb-4"
+          />
+
+          <Button
+            variant="neon"
+            size="lg"
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Analyze Food
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
-      <div className="cyber-card p-4">
-        <p className="text-sm text-muted-foreground mb-4">
-          Describe what you ate and I'll estimate the protein and cost for you.
-        </p>
-
-        <Textarea
-          placeholder="e.g., 3 eggs, a chicken breast with rice, protein shake..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="min-h-[120px] bg-background/50 border-border/50 focus:border-primary resize-none mb-4"
-        />
-
-        <Button
-          variant="neon"
-          size="lg"
-          className="w-full"
-          onClick={handleSubmit}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Analyze Food
-            </>
-          )}
-        </Button>
-      </div>
-
-      <div className="mt-6 cyber-card p-4">
-        <h3 className="text-sm font-semibold text-primary mb-3">
-          💡 Budget Protein Tips
-        </h3>
-        <ul className="space-y-2 text-sm text-muted-foreground">
-          <li>• Eggs: ~$0.30 → 6g protein</li>
-          <li>• Chicken breast: ~$1.50 → 31g protein</li>
-          <li>• Canned tuna: ~$1.00 → 22g protein</li>
-          <li>• Greek yogurt: ~$1.00 → 17g protein</li>
-          <li>• Protein powder: ~$0.80 → 25g protein</li>
-        </ul>
-      </div>
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
