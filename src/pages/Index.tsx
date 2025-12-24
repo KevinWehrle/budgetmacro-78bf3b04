@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { AdBanner } from "@/components/AdBanner";
 import { Dashboard } from "@/components/Dashboard";
@@ -6,9 +6,19 @@ import { FoodEntry } from "@/components/FoodEntry";
 import { ValueFoods } from "@/components/ValueFoods";
 import { MenuPage } from "@/components/MenuPage";
 import { Zap } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const { settings } = useApp();
+
+  useEffect(() => {
+    if (settings.darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [settings.darkMode]);
 
   return (
     <div className="min-h-screen bg-background pb-32">

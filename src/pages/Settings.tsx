@@ -20,6 +20,19 @@ export default function Settings() {
     toast.success(settings.notifications ? "Notifications disabled" : "Notifications enabled");
   };
 
+  const toggleDarkMode = () => {
+    const newDarkMode = !settings.darkMode;
+    setSettings({ ...settings, darkMode: newDarkMode });
+    
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    
+    toast.success(newDarkMode ? "Dark mode enabled" : "Light mode enabled");
+  };
+
   return (
     <div className="min-h-screen bg-background pb-8">
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50">
@@ -62,10 +75,10 @@ export default function Settings() {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">Dark Mode</h3>
-                <p className="text-xs text-muted-foreground">Always on</p>
+                <p className="text-xs text-muted-foreground">{settings.darkMode ? "Currently on" : "Currently off"}</p>
               </div>
             </div>
-            <Switch checked disabled />
+            <Switch checked={settings.darkMode} onCheckedChange={toggleDarkMode} />
           </div>
 
           <div className="pt-4">

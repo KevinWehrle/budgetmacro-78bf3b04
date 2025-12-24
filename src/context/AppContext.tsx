@@ -17,6 +17,7 @@ interface Goals {
 
 interface AppSettings {
   notifications: boolean;
+  darkMode: boolean;
 }
 
 interface AppContextType {
@@ -39,6 +40,7 @@ const defaultGoals: Goals = {
 
 const defaultSettings: AppSettings = {
   notifications: false,
+  darkMode: true,
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
