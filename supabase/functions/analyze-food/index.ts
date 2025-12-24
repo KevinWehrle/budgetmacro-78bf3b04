@@ -148,6 +148,39 @@ serve(async (req) => {
       );
     }
 
+    // Sanitize input to prevent prompt injection attacks
+    const sanitizeInput = (input: string): string => {
+      // Remove characters commonly used in prompt injection
+      const sanitized = input
+        .replace(/[{}[\]<>"'`\\]/g, '') // Remove special chars that could be used for injection
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      return sanitized;
+    };
+
+    // Check for suspicious patterns that might indicate prompt injection
+    const suspiciousPatterns = [
+      /ignore\s+(all\s+)?(previous|above|prior)/i,
+      /system\s*:/i,
+      /assistant\s*:/i,
+      /user\s*:/i,
+      /forget\s+(everything|all)/i,
+      /new\s+instructions?/i,
+      /override/i,
+      /disregard/i,
+    ];
+
+    const hasSuspiciousPattern = suspiciousPatterns.some(pattern => pattern.test(trimmedInput));
+    if (hasSuspiciousPattern) {
+      console.log('Suspicious input pattern detected from user:', user.id);
+      return new Response(
+        JSON.stringify({ error: 'Invalid input detected' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const sanitizedInput = sanitizeInput(trimmedInput);
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY is not configured');
@@ -189,7 +222,7 @@ Only respond with the JSON object, no other text.`;
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Analyze this food: "${trimmedInput}"` }
+          { role: 'user', content: `Analyze this food: "${sanitizedInput}"` }
         ],
       }),
     });
