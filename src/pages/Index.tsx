@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
-import { AdBanner } from "@/components/AdBanner";
 import { Dashboard } from "@/components/Dashboard";
 import { FoodEntry } from "@/components/FoodEntry";
 import { ValueFoods } from "@/components/ValueFoods";
@@ -22,7 +21,7 @@ const Index = () => {
   }, [settings.darkMode]);
 
   return (
-    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Status bar spacer */}
       <div className="sticky top-0 z-50 bg-background h-[env(safe-area-inset-top,0px)]" />
 
@@ -34,9 +33,6 @@ const Index = () => {
         {activeTab === "history" && <History />}
         {activeTab === "menu" && <MenuPage />}
       </main>
-
-      {/* Ad Banner */}
-      <AdBanner />
 
       {/* Bottom Navigation */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
