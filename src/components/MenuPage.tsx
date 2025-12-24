@@ -6,29 +6,25 @@ const menuItems = [
     icon: Target,
     label: "Set Goals",
     description: "Customize your daily targets",
-    href: "#",
-    disabled: true,
+    href: "/goals",
   },
   {
     icon: Settings,
     label: "Settings",
     description: "App preferences",
-    href: "#",
-    disabled: true,
+    href: "/settings",
   },
   {
     icon: Shield,
     label: "Privacy Policy",
     description: "How we handle your data",
     href: "/privacy",
-    disabled: false,
   },
   {
     icon: Info,
     label: "About",
     description: "Learn more about MacroMoney",
     href: "/about",
-    disabled: false,
   },
 ];
 
@@ -40,36 +36,22 @@ export function MenuPage() {
       </h1>
 
       <div className="space-y-3">
-        {menuItems.map((item) => {
-          const content = (
-            <div
-              className={`cyber-card p-4 flex items-center gap-4 ${
-                item.disabled ? "opacity-50" : "hover:border-primary/50"
-              } transition-colors`}
-            >
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+        {menuItems.map((item) => (
+          <Link key={item.label} to={item.href}>
+            <div className="cyber-card p-4 flex items-center gap-4 hover:border-primary/50 transition-colors">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 shrink-0">
                 <item.icon className="w-5 h-5 text-primary" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-foreground">{item.label}</h3>
                 <p className="text-xs text-muted-foreground">
                   {item.description}
                 </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
             </div>
-          );
-
-          if (item.disabled) {
-            return <div key={item.label}>{content}</div>;
-          }
-
-          return (
-            <Link key={item.label} to={item.href}>
-              {content}
-            </Link>
-          );
-        })}
+          </Link>
+        ))}
       </div>
 
       <div className="mt-8 text-center">
