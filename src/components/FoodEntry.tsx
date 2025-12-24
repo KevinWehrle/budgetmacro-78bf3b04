@@ -80,95 +80,125 @@ export function FoodEntry() {
     let protein = 0;
     let cost = 0;
 
-    // Egg detection (grocery: ~$0.25-0.40 per egg)
+    // Egg detection (1 large egg = 72 cal, 6g protein, ~$0.35)
     const eggMatch = lower.match(/(\d+)?\s*eggs?/);
     if (eggMatch) {
       const count = parseInt(eggMatch[1]) || 1;
-      calories += count * 70;
+      calories += count * 72;
       protein += count * 6;
       cost += count * 0.35;
     }
 
-    // Chicken breast detection (~$3.50/lb, 6oz portion)
-    if (lower.includes("chicken breast") || lower.includes("chicken")) {
+    // Chicken breast (6oz = 280 cal, 53g protein, ~$2.00)
+    if (lower.includes("chicken breast")) {
       const portions = lower.includes("2") ? 2 : 1;
-      calories += portions * 165;
-      protein += portions * 31;
+      calories += portions * 280;
+      protein += portions * 53;
       cost += portions * 2.00;
+    } else if (lower.includes("chicken")) {
+      // Generic chicken (thigh/leg/etc - 6oz = 320 cal, 40g protein)
+      const portions = lower.includes("2") ? 2 : 1;
+      calories += portions * 320;
+      protein += portions * 40;
+      cost += portions * 1.75;
     }
 
-    // Canned tuna (~$1.50-2.00 per can)
+    // Canned tuna (5oz can = 120 cal, 27g protein, ~$1.75)
     if (lower.includes("tuna")) {
       const cans = lower.includes("2") ? 2 : 1;
-      calories += cans * 100;
-      protein += cans * 22;
+      calories += cans * 120;
+      protein += cans * 27;
       cost += cans * 1.75;
     }
 
-    // Greek yogurt (~$1.25-1.50 per container)
-    if (lower.includes("greek yogurt") || lower.includes("yogurt")) {
+    // Greek yogurt (6oz container = 100 cal, 17g protein, ~$1.40)
+    if (lower.includes("greek yogurt")) {
       calories += 100;
       protein += 17;
       cost += 1.40;
+    } else if (lower.includes("yogurt")) {
+      // Regular yogurt (6oz = 150 cal, 6g protein)
+      calories += 150;
+      protein += 6;
+      cost += 1.00;
     }
 
-    // Protein shake/powder (~$1.00-1.50 per scoop)
+    // Protein shake/powder (1 scoop = 120 cal, 24g protein, ~$1.25)
     if (lower.includes("protein shake") || lower.includes("protein powder") || lower.includes("whey")) {
       calories += 120;
-      protein += 25;
+      protein += 24;
       cost += 1.25;
     }
 
-    // Milk (~$4.50/gallon, $0.30 per cup)
-    if (lower.includes("milk")) {
+    // Milk (1 cup whole = 150 cal, 8g protein / skim = 90 cal, 8g protein)
+    if (lower.includes("skim milk") || lower.includes("nonfat milk")) {
+      calories += 90;
+      protein += 8;
+      cost += 0.35;
+    } else if (lower.includes("milk")) {
       calories += 150;
       protein += 8;
       cost += 0.35;
     }
 
-    // Rice (~$0.15-0.25 per cooked cup)
-    if (lower.includes("rice")) {
-      calories += 200;
+    // Rice (1 cup cooked white = 205 cal, 4g protein / brown = 215 cal, 5g protein)
+    if (lower.includes("brown rice")) {
+      calories += 215;
+      protein += 5;
+      cost += 0.25;
+    } else if (lower.includes("rice")) {
+      calories += 205;
       protein += 4;
       cost += 0.20;
     }
 
-    // Beans/lentils (~$0.40-0.60 per cup cooked)
+    // Beans/lentils (1 cup cooked = 230 cal, 15g protein)
     if (lower.includes("beans") || lower.includes("lentils")) {
-      calories += 225;
+      calories += 230;
       protein += 15;
       cost += 0.50;
     }
 
-    // Peanut butter (~$0.25 per 2 tbsp)
+    // Peanut butter (2 tbsp = 190 cal, 8g protein)
     if (lower.includes("peanut butter")) {
       calories += 190;
-      protein += 7;
+      protein += 8;
       cost += 0.30;
     }
 
-    // Oatmeal (~$0.20 per serving)
+    // Oatmeal (1 cup cooked = 160 cal, 6g protein)
     if (lower.includes("oatmeal") || lower.includes("oats")) {
-      calories += 150;
-      protein += 5;
+      calories += 160;
+      protein += 6;
       cost += 0.25;
     }
 
-    // Ground beef (~$5/lb, 4oz portion)
-    if (lower.includes("ground beef") || lower.includes("beef")) {
-      calories += 280;
-      protein += 20;
+    // Ground beef (4oz 80/20 = 290 cal, 19g protein / 90/10 = 200 cal, 23g protein)
+    if (lower.includes("lean beef") || lower.includes("ground beef 90")) {
+      calories += 200;
+      protein += 23;
+      cost += 2.00;
+    } else if (lower.includes("ground beef") || lower.includes("beef")) {
+      calories += 290;
+      protein += 19;
       cost += 1.75;
     }
 
-    // Cottage cheese (~$3.50 per container, $0.80 per serving)
+    // Steak (6oz ribeye = 420 cal, 40g protein / sirloin = 320 cal, 46g protein)
+    if (lower.includes("steak") || lower.includes("ribeye") || lower.includes("sirloin")) {
+      calories += 370;
+      protein += 43;
+      cost += 5.00;
+    }
+
+    // Cottage cheese (1 cup = 220 cal, 28g protein)
     if (lower.includes("cottage cheese")) {
-      calories += 110;
-      protein += 14;
+      calories += 220;
+      protein += 28;
       cost += 0.85;
     }
 
-    // Bread (~$0.20 per slice)
+    // Bread (1 slice = 80 cal, 3g protein)
     if (lower.includes("bread") || lower.includes("toast")) {
       const slices = lower.includes("2") ? 2 : 1;
       calories += slices * 80;
@@ -176,26 +206,81 @@ export function FoodEntry() {
       cost += slices * 0.20;
     }
 
-    // Fast food / restaurant detection (higher cost)
-    if (lower.includes("mcdonald") || lower.includes("burger king") || lower.includes("wendy") || 
-        lower.includes("chipotle") || lower.includes("subway") || lower.includes("fast food")) {
-      calories += 600;
-      protein += 25;
+    // Banana (1 medium = 105 cal, 1g protein)
+    if (lower.includes("banana")) {
+      const count = lower.match(/(\d+)\s*banana/) ? parseInt(lower.match(/(\d+)\s*banana/)![1]) : 1;
+      calories += count * 105;
+      protein += count * 1;
+      cost += count * 0.25;
+    }
+
+    // Apple (1 medium = 95 cal, 0.5g protein)
+    if (lower.includes("apple")) {
+      calories += 95;
+      protein += 1;
+      cost += 0.75;
+    }
+
+    // Pasta (1 cup cooked = 220 cal, 8g protein)
+    if (lower.includes("pasta") || lower.includes("spaghetti") || lower.includes("noodles")) {
+      calories += 220;
+      protein += 8;
+      cost += 0.40;
+    }
+
+    // Salmon (6oz = 350 cal, 40g protein)
+    if (lower.includes("salmon")) {
+      calories += 350;
+      protein += 40;
+      cost += 4.50;
+    }
+
+    // Tofu (1/2 block = 180 cal, 20g protein)
+    if (lower.includes("tofu")) {
+      calories += 180;
+      protein += 20;
+      cost += 1.25;
+    }
+
+    // Cheese (1oz cheddar = 115 cal, 7g protein)
+    if (lower.includes("cheese") && !lower.includes("cottage")) {
+      calories += 115;
+      protein += 7;
+      cost += 0.50;
+    }
+
+    // Fast food / restaurant detection
+    if (lower.includes("mcdonald") || lower.includes("burger king") || lower.includes("wendy")) {
+      calories += 650;
+      protein += 28;
       cost += 9.00;
+    } else if (lower.includes("chipotle")) {
+      calories += 850;
+      protein += 45;
+      cost += 12.00;
+    } else if (lower.includes("subway")) {
+      calories += 450;
+      protein += 25;
+      cost += 8.00;
+    } else if (lower.includes("pizza")) {
+      const slices = lower.match(/(\d+)\s*slice/) ? parseInt(lower.match(/(\d+)\s*slice/)![1]) : 2;
+      calories += slices * 285;
+      protein += slices * 12;
+      cost += slices * 2.50;
     }
 
     // Restaurant/dining out
     if (lower.includes("restaurant") || lower.includes("ate out") || lower.includes("takeout")) {
-      calories += 700;
-      protein += 30;
-      cost += 15.00;
+      calories += 800;
+      protein += 35;
+      cost += 18.00;
     }
 
     // Default if nothing matched
     if (calories === 0) {
-      calories = 250;
-      protein = 12;
-      cost = 3.00;
+      calories = 300;
+      protein = 15;
+      cost = 4.00;
     }
 
     return { calories, protein, cost: Math.round(cost * 100) / 100 };
