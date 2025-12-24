@@ -4,8 +4,8 @@ import { ArrowLeft, Shield } from "lucide-react";
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-background pb-8">
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50">
-        <div className="flex items-center gap-3 px-4 h-14 max-w-md mx-auto">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50 pt-safe">
+        <div className="flex items-center gap-3 px-4 h-16 max-w-md mx-auto">
           <Link
             to="/"
             className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
