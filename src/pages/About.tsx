@@ -65,7 +65,7 @@ export default function About() {
         </div>
 
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Made with 💚 for broke students everywhere</p>
+          <p>Built for broke college students.</p>
           <p className="mt-1">Version 1.0.0</p>
         </div>
       </main>
