@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico"],
       manifest: {
-        name: "MacroMoney - Track Macros on a Budget",
-        short_name: "MacroMoney",
+        name: "BudgetMacro - Track Macros on a Budget",
+        short_name: "BudgetMacro",
         description: "The budget-friendly macro tracker for college students. Track protein and spending in one app.",
         theme_color: "#0a0a0a",
         background_color: "#0a0a0a",

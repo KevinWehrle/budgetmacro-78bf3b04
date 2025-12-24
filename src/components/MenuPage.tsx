@@ -23,7 +23,7 @@ const menuItems = [
   {
     icon: Info,
     label: "About",
-    description: "Learn more about MacroMoney",
+    description: "Learn more about BudgetMacro",
     href: "/about",
   },
 ];
@@ -56,7 +56,7 @@ export function MenuPage() {
 
       <div className="mt-8 text-center">
         <p className="text-xs text-muted-foreground">
-          MacroMoney v1.0.0
+          BudgetMacro v1.0.0
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           Built for broke & buff students.

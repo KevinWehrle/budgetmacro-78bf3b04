@@ -29,7 +29,7 @@ export default function Privacy() {
             1. Information We Collect
           </h2>
           <p className="text-muted-foreground">
-            MacroMoney collects the following information to provide our services:
+            BudgetMacro collects the following information to provide our services:
           </p>
           <ul className="text-muted-foreground list-disc pl-4 space-y-1">
             <li>Food entries you log (stored locally on your device)</li>
@@ -83,7 +83,7 @@ export default function Privacy() {
             6. Contact Us
           </h2>
           <p className="text-muted-foreground">
-            If you have questions about this Privacy Policy, please contact us at support@macromoney.app
+            If you have questions about this Privacy Policy, please contact us at support@budgetmacro.app
           </p>
         </div>
       </main>

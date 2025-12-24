@@ -29,7 +29,7 @@ const Index = () => {
           <div className="flex items-center gap-2">
             <Zap className="w-6 h-6 text-primary" />
             <span className="font-bold text-lg">
-              Macro<span className="text-primary neon-glow-text">Money</span>
+              Budget<span className="text-primary neon-glow-text">Macro</span>
             </span>
           </div>
           <div className="text-xs text-muted-foreground">
