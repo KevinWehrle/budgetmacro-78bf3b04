@@ -59,7 +59,7 @@ export function MenuPage() {
           MacroMoney v1.0.0
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Built for broke & buff students 💪
+          Built for broke & buff students.
         </p>
       </div>
     </div>
