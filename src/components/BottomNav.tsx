@@ -8,8 +8,8 @@ interface BottomNavProps {
 
 const navItems = [
   { id: "dashboard", icon: Home, label: "Home" },
-  { id: "add", icon: PlusCircle, label: "Add" },
   { id: "foods", icon: List, label: "Foods" },
+  { id: "add", icon: PlusCircle, label: "Add" },
   { id: "history", icon: Calendar, label: "History" },
   { id: "menu", icon: Menu, label: "Menu" },
 ];
