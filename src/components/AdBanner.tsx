@@ -34,16 +34,29 @@ export function AdBanner() {
   }, []);
 
   return (
-    <div className="fixed left-0 right-0 z-40 bg-muted/80 backdrop-blur-sm border-t border-border/30" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}>
-      <div className="flex items-center justify-center h-14 px-4 max-w-md mx-auto">
+    <div 
+      className="fixed left-0 right-0 z-40 bg-muted/80 backdrop-blur-sm border-t border-border/30 overflow-hidden"
+      style={{ 
+        bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+        height: '50px',
+        maxHeight: '50px'
+      }}
+    >
+      <div className="flex items-center justify-center h-full px-4 max-w-md mx-auto overflow-hidden">
         <ins
           ref={adRef}
           className="adsbygoogle"
-          style={{ display: 'block', width: '100%', height: '50px' }}
+          style={{ 
+            display: 'block', 
+            width: '100%', 
+            height: '50px',
+            maxHeight: '50px',
+            overflow: 'hidden'
+          }}
           data-ad-client="ca-pub-7627780184759005"
           data-ad-slot="auto"
           data-ad-format="horizontal"
-          data-full-width-responsive="true"
+          data-full-width-responsive="false"
         />
       </div>
     </div>
