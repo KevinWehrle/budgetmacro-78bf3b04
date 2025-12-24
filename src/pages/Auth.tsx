@@ -25,6 +25,11 @@ export default function Auth() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   useEffect(() => {
+    // Enable dark mode on auth page
+    document.documentElement.classList.add('dark');
+  }, []);
+
+  useEffect(() => {
     if (!authLoading && user) {
       navigate('/', { replace: true });
     }
