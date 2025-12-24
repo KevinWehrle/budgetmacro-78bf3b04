@@ -116,6 +116,11 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Outfit', sans-serif;
   }
+
+  /* Safe area utilities for iOS */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 @layer utilities {
