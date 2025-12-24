@@ -1,12 +1,23 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Settings as SettingsIcon, Bell, Moon, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useApp } from "@/context/AppContext";
 
 export default function Settings() {
+  const { settings, setSettings, clearFoodLogs } = useApp();
+  const navigate = useNavigate();
+
   const handleClearData = () => {
-    toast.success("All data cleared!");
+    clearFoodLogs();
+    toast.success("All food logs cleared!");
+    navigate("/");
+  };
+
+  const toggleNotifications = () => {
+    setSettings({ ...settings, notifications: !settings.notifications });
+    toast.success(settings.notifications ? "Notifications disabled" : "Notifications enabled");
   };
 
   return (
@@ -30,7 +41,7 @@ export default function Settings() {
         <div className="space-y-4">
           <div className="cyber-card p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 shrink-0">
                 <Bell className="w-5 h-5 text-primary" />
               </div>
               <div>
@@ -38,12 +49,15 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground">Daily reminders</p>
               </div>
             </div>
-            <Switch />
+            <Switch 
+              checked={settings.notifications} 
+              onCheckedChange={toggleNotifications}
+            />
           </div>
 
           <div className="cyber-card p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 shrink-0">
                 <Moon className="w-5 h-5 text-primary" />
               </div>
               <div>
