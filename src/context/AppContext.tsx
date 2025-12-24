@@ -1,5 +1,8 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { format, startOfDay, isSameDay } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface FoodLog {
   id: string;
@@ -42,6 +45,7 @@ interface AppContextType {
   setSettings: (settings: AppSettings) => void;
   todayTotals: { calories: number; protein: number; cost: number };
   history: DayHistory[];
+  loading: boolean;
 }
 
 const defaultGoals: Goals = {
@@ -58,111 +62,117 @@ const defaultSettings: AppSettings = {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [foodLogs, setFoodLogs] = useState<FoodLog[]>(() => {
-    const saved = localStorage.getItem("budgetmacro-logs");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return parsed.map((log: FoodLog) => ({
-        ...log,
-        timestamp: new Date(log.timestamp),
-      }));
-    }
-    return [];
-  });
+  const { user } = useAuth();
+  const [foodLogs, setFoodLogs] = useState<FoodLog[]>([]);
+  const [goals, setGoalsState] = useState<Goals>(defaultGoals);
+  const [settings, setSettingsState] = useState<AppSettings>(defaultSettings);
+  const [history, setHistory] = useState<DayHistory[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [goals, setGoalsState] = useState<Goals>(() => {
-    const saved = localStorage.getItem("budgetmacro-goals");
-    return saved ? JSON.parse(saved) : defaultGoals;
-  });
-
-  const [settings, setSettingsState] = useState<AppSettings>(() => {
-    const saved = localStorage.getItem("budgetmacro-settings");
-    return saved ? JSON.parse(saved) : defaultSettings;
-  });
-
-  const [history, setHistory] = useState<DayHistory[]>(() => {
-    const saved = localStorage.getItem("budgetmacro-history");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [lastCheckedDate, setLastCheckedDate] = useState<string>(() => {
-    const saved = localStorage.getItem("budgetmacro-last-date");
-    return saved || format(new Date(), "yyyy-MM-dd");
-  });
-
-  // Check for day change and archive previous day's data
+  // Load data from Supabase when user changes
   useEffect(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    
-    if (lastCheckedDate !== today) {
-      // Archive yesterday's data if there were any logs
-      const yesterdayLogs = foodLogs.filter((log) => {
-        const logDate = format(new Date(log.timestamp), "yyyy-MM-dd");
-        return logDate === lastCheckedDate;
-      });
+    if (!user) {
+      setFoodLogs([]);
+      setGoalsState(defaultGoals);
+      setSettingsState(defaultSettings);
+      setHistory([]);
+      setLoading(false);
+      return;
+    }
 
-      if (yesterdayLogs.length > 0) {
-        const totals = yesterdayLogs.reduce(
-          (acc, log) => ({
-            calories: acc.calories + log.calories,
-            protein: acc.protein + log.protein,
-            cost: acc.cost + log.cost,
-          }),
-          { calories: 0, protein: 0, cost: 0 }
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Load today's food logs
+        const today = format(new Date(), "yyyy-MM-dd");
+        const { data: logsData, error: logsError } = await supabase
+          .from("food_logs")
+          .select("*")
+          .eq("user_id", user.id)
+          .gte("created_at", `${today}T00:00:00`)
+          .order("created_at", { ascending: false });
+
+        if (logsError) throw logsError;
+
+        setFoodLogs(
+          (logsData || []).map((log) => ({
+            id: log.id,
+            description: log.description,
+            calories: log.calories,
+            protein: log.protein,
+            cost: Number(log.cost),
+            timestamp: new Date(log.created_at),
+          }))
         );
 
-        const newHistoryEntry: DayHistory = {
-          date: lastCheckedDate,
-          ...totals,
-          goalCalories: goals.calories,
-          goalProtein: goals.protein,
-          goalBudget: goals.budget,
-        };
+        // Load goals
+        const { data: goalsData, error: goalsError } = await supabase
+          .from("user_goals")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-        setHistory((prev) => {
-          const exists = prev.some((h) => h.date === lastCheckedDate);
-          if (exists) return prev;
-          return [newHistoryEntry, ...prev];
-        });
+        if (goalsError) throw goalsError;
+
+        if (goalsData) {
+          setGoalsState({
+            calories: goalsData.calories,
+            protein: goalsData.protein,
+            budget: Number(goalsData.budget),
+          });
+        }
+
+        // Load settings
+        const { data: settingsData, error: settingsError } = await supabase
+          .from("user_settings")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (settingsError) throw settingsError;
+
+        if (settingsData) {
+          setSettingsState({
+            notifications: settingsData.notifications,
+            darkMode: settingsData.dark_mode,
+          });
+        }
+
+        // Load history
+        const { data: historyData, error: historyError } = await supabase
+          .from("day_history")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("date", { ascending: false })
+          .limit(30);
+
+        if (historyError) throw historyError;
+
+        setHistory(
+          (historyData || []).map((h) => ({
+            date: h.date,
+            calories: h.calories,
+            protein: h.protein,
+            cost: Number(h.cost),
+            goalCalories: h.goal_calories,
+            goalProtein: h.goal_protein,
+            goalBudget: Number(h.goal_budget),
+          }))
+        );
+      } catch (error) {
+        console.error("Error loading data:", error);
+        toast.error("Failed to load data");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Clear today's logs (keep only non-yesterday logs for history reference)
-      setFoodLogs((prev) =>
-        prev.filter((log) => {
-          const logDate = format(new Date(log.timestamp), "yyyy-MM-dd");
-          return logDate === today;
-        })
-      );
-
-      setLastCheckedDate(today);
-      localStorage.setItem("budgetmacro-last-date", today);
-    }
-  }, [lastCheckedDate, foodLogs, goals]);
-
-  // Persist to localStorage
-  useEffect(() => {
-    localStorage.setItem("budgetmacro-logs", JSON.stringify(foodLogs));
-  }, [foodLogs]);
-
-  useEffect(() => {
-    localStorage.setItem("budgetmacro-goals", JSON.stringify(goals));
-  }, [goals]);
-
-  useEffect(() => {
-    localStorage.setItem("budgetmacro-settings", JSON.stringify(settings));
-  }, [settings]);
-
-  useEffect(() => {
-    localStorage.setItem("budgetmacro-history", JSON.stringify(history));
-  }, [history]);
+    loadData();
+  }, [user]);
 
   // Calculate today's totals
   const todayTotals = foodLogs
-    .filter((log) => {
-      const today = new Date();
-      const logDate = new Date(log.timestamp);
-      return isSameDay(logDate, today);
-    })
+    .filter((log) => isSameDay(new Date(log.timestamp), new Date()))
     .reduce(
       (acc, log) => ({
         calories: acc.calories + log.calories,
@@ -172,30 +182,135 @@ export function AppProvider({ children }: { children: ReactNode }) {
       { calories: 0, protein: 0, cost: 0 }
     );
 
-  const addFoodLog = (log: Omit<FoodLog, "id" | "timestamp">) => {
+  const addFoodLog = useCallback(async (log: Omit<FoodLog, "id" | "timestamp">) => {
+    if (!user) return;
+
     const newLog: FoodLog = {
       ...log,
       id: crypto.randomUUID(),
       timestamp: new Date(),
     };
+
+    // Optimistic update
     setFoodLogs((prev) => [newLog, ...prev]);
-  };
 
-  const deleteFoodLog = (id: string) => {
+    try {
+      const { error } = await supabase.from("food_logs").insert({
+        id: newLog.id,
+        user_id: user.id,
+        description: log.description,
+        calories: log.calories,
+        protein: log.protein,
+        cost: log.cost,
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error adding food log:", error);
+      // Revert optimistic update
+      setFoodLogs((prev) => prev.filter((l) => l.id !== newLog.id));
+      toast.error("Failed to save food entry");
+    }
+  }, [user]);
+
+  const deleteFoodLog = useCallback(async (id: string) => {
+    if (!user) return;
+
+    const previousLogs = foodLogs;
+    // Optimistic update
     setFoodLogs((prev) => prev.filter((log) => log.id !== id));
-  };
 
-  const clearFoodLogs = () => {
+    try {
+      const { error } = await supabase
+        .from("food_logs")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error deleting food log:", error);
+      // Revert optimistic update
+      setFoodLogs(previousLogs);
+      toast.error("Failed to delete entry");
+    }
+  }, [user, foodLogs]);
+
+  const clearFoodLogs = useCallback(async () => {
+    if (!user) return;
+
+    const today = format(new Date(), "yyyy-MM-dd");
+    const previousLogs = foodLogs;
+    // Optimistic update
     setFoodLogs([]);
-  };
 
-  const setGoals = (newGoals: Goals) => {
+    try {
+      const { error } = await supabase
+        .from("food_logs")
+        .delete()
+        .eq("user_id", user.id)
+        .gte("created_at", `${today}T00:00:00`);
+
+      if (error) throw error;
+      toast.success("All entries cleared");
+    } catch (error) {
+      console.error("Error clearing food logs:", error);
+      // Revert optimistic update
+      setFoodLogs(previousLogs);
+      toast.error("Failed to clear entries");
+    }
+  }, [user, foodLogs]);
+
+  const setGoals = useCallback(async (newGoals: Goals) => {
+    if (!user) return;
+
+    const previousGoals = goals;
+    // Optimistic update
     setGoalsState(newGoals);
-  };
 
-  const setSettings = (newSettings: AppSettings) => {
+    try {
+      const { error } = await supabase
+        .from("user_goals")
+        .upsert({
+          user_id: user.id,
+          calories: newGoals.calories,
+          protein: newGoals.protein,
+          budget: newGoals.budget,
+        }, { onConflict: "user_id" });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error saving goals:", error);
+      // Revert optimistic update
+      setGoalsState(previousGoals);
+      toast.error("Failed to save goals");
+    }
+  }, [user, goals]);
+
+  const setSettings = useCallback(async (newSettings: AppSettings) => {
+    if (!user) return;
+
+    const previousSettings = settings;
+    // Optimistic update
     setSettingsState(newSettings);
-  };
+
+    try {
+      const { error } = await supabase
+        .from("user_settings")
+        .upsert({
+          user_id: user.id,
+          notifications: newSettings.notifications,
+          dark_mode: newSettings.darkMode,
+        }, { onConflict: "user_id" });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      // Revert optimistic update
+      setSettingsState(previousSettings);
+      toast.error("Failed to save settings");
+    }
+  }, [user, settings]);
 
   return (
     <AppContext.Provider
@@ -210,6 +325,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSettings,
         todayTotals,
         history,
+        loading,
       }}
     >
       {children}

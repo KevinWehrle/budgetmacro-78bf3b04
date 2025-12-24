@@ -14,7 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      day_history: {
+        Row: {
+          calories: number
+          cost: number
+          created_at: string
+          date: string
+          goal_budget: number
+          goal_calories: number
+          goal_protein: number
+          id: string
+          protein: number
+          user_id: string
+        }
+        Insert: {
+          calories?: number
+          cost?: number
+          created_at?: string
+          date: string
+          goal_budget: number
+          goal_calories: number
+          goal_protein: number
+          id?: string
+          protein?: number
+          user_id: string
+        }
+        Update: {
+          calories?: number
+          cost?: number
+          created_at?: string
+          date?: string
+          goal_budget?: number
+          goal_calories?: number
+          goal_protein?: number
+          id?: string
+          protein?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      food_logs: {
+        Row: {
+          calories: number
+          cost: number
+          created_at: string
+          description: string
+          id: string
+          protein: number
+          user_id: string
+        }
+        Insert: {
+          calories: number
+          cost: number
+          created_at?: string
+          description: string
+          id?: string
+          protein: number
+          user_id: string
+        }
+        Update: {
+          calories?: number
+          cost?: number
+          created_at?: string
+          description?: string
+          id?: string
+          protein?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_goals: {
+        Row: {
+          budget: number
+          calories: number
+          protein: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget?: number
+          calories?: number
+          protein?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget?: number
+          calories?: number
+          protein?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          dark_mode: boolean
+          notifications: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          dark_mode?: boolean
+          notifications?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          dark_mode?: boolean
+          notifications?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

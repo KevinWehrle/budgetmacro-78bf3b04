@@ -1,9 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Settings as SettingsIcon, Bell, Moon, Trash2, Download } from "lucide-react";
+import { ArrowLeft, Settings as SettingsIcon, Bell, Moon, Trash2, Download, LogOut } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -13,9 +14,16 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function Settings() {
   const { settings, setSettings, clearFoodLogs } = useApp();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out successfully");
+    navigate("/auth", { replace: true });
+  };
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -138,14 +146,22 @@ export default function Settings() {
             </div>
           )}
 
-          <div className="pt-4">
+          <div className="pt-4 space-y-3">
             <Button
               variant="outline"
               className="w-full border-destructive/50 text-destructive hover:bg-destructive/10"
               onClick={handleClearData}
             >
               <Trash2 className="w-4 h-4" />
-              Clear All Data
+              Clear Today's Data
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
             </Button>
           </div>
         </div>
