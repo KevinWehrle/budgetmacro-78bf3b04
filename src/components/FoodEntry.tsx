@@ -46,14 +46,21 @@ export function FoodEntry() {
 
       if (error) {
         console.error('Edge function error:', error);
+        // Check for authentication error
+        if (error.message?.includes('401') || error.message?.includes('JWT')) {
+          toast.info("Using local estimates", { 
+            description: "Sign in to enable AI-powered analysis" 
+          });
+        } else {
+          toast.info("Using local estimates", { 
+            description: "AI unavailable, using built-in estimation" 
+          });
+        }
         // Fall back to local estimation
         const fallbackEstimates = estimateNutritionFallback(input);
         setEstimate({
           description: input,
           ...fallbackEstimates,
-        });
-        toast.info("Using local estimates", { 
-          description: "AI unavailable, using built-in estimation" 
         });
       } else if (data.error) {
         console.error('AI error:', data.error);
