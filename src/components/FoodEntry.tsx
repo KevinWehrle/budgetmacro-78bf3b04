@@ -13,6 +13,7 @@ import {
 import { Sparkles, Loader2, Flame, Dumbbell, DollarSign, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/context/AppContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FoodEstimate {
   description: string;
@@ -37,17 +38,62 @@ export function FoodEntry() {
 
     setIsLoading(true);
 
-    // Simulate AI processing
-    setTimeout(() => {
-      const mockEstimates = estimateNutrition(input);
+    try {
+      // Call the AI edge function to analyze food
+      const { data, error } = await supabase.functions.invoke('analyze-food', {
+        body: { foodDescription: input.trim() }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        // Fall back to local estimation
+        const fallbackEstimates = estimateNutritionFallback(input);
+        setEstimate({
+          description: input,
+          ...fallbackEstimates,
+        });
+        toast.info("Using local estimates", { 
+          description: "AI unavailable, using built-in estimation" 
+        });
+      } else if (data.error) {
+        console.error('AI error:', data.error);
+        // Fall back to local estimation
+        const fallbackEstimates = estimateNutritionFallback(input);
+        setEstimate({
+          description: input,
+          ...fallbackEstimates,
+        });
+        toast.info("Using local estimates", { 
+          description: data.error 
+        });
+      } else {
+        // Use AI-generated estimates
+        setEstimate({
+          description: input,
+          calories: data.calories,
+          protein: data.protein,
+          cost: data.cost,
+        });
+      }
+      
+      setCustomCost("");
+      setShowConfirm(true);
+    } catch (err) {
+      console.error('Request error:', err);
+      // Fall back to local estimation
+      const fallbackEstimates = estimateNutritionFallback(input);
       setEstimate({
         description: input,
-        ...mockEstimates,
+        ...fallbackEstimates,
+      });
+      toast.info("Using local estimates", { 
+        description: "Could not reach AI service" 
       });
       setCustomCost("");
       setShowConfirm(true);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleConfirm = () => {
@@ -73,8 +119,8 @@ export function FoodEntry() {
     setCustomCost("");
   };
 
-  // More realistic estimation logic based on keywords
-  const estimateNutrition = (text: string) => {
+  // Fallback estimation logic when AI is unavailable
+  const estimateNutritionFallback = (text: string) => {
     const lower = text.toLowerCase();
     let calories = 0;
     let protein = 0;
