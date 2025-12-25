@@ -102,7 +102,7 @@ export default function Goals() {
             </div>
           </div>
 
-          <Button variant="neon" size="lg" className="w-full" onClick={handleSave}>
+          <Button variant="default" size="lg" className="w-full" onClick={handleSave}>
             <Save className="w-4 h-4" />
             Save Goals
           </Button>
