@@ -8,22 +8,20 @@ interface ProgressRingProps {
   label: string;
   value: string;
   variant: "calories" | "protein" | "money";
+  remaining?: string;
 }
 
 const variantColors = {
   calories: {
-    stroke: "stroke-progress-calories",
-    glow: "progress-ring-glow-calories",
+    gradient: ["#F59E0B", "#FB923C"], // Amber to orange
     text: "text-progress-calories",
   },
   protein: {
-    stroke: "stroke-progress-protein",
-    glow: "progress-ring-glow-protein",
+    gradient: ["#059669", "#10B981"], // Forest green to emerald
     text: "text-progress-protein",
   },
   money: {
-    stroke: "stroke-progress-money",
-    glow: "progress-ring-glow-money",
+    gradient: ["#7C3AED", "#8B5CF6"], // Violet to purple
     text: "text-progress-money",
   },
 };
@@ -32,10 +30,11 @@ export function ProgressRing({
   progress,
   max,
   size = 100,
-  strokeWidth = 8,
+  strokeWidth = 10,
   label,
   value,
   variant,
+  remaining,
 }: ProgressRingProps) {
   const [animatedProgress, setAnimatedProgress] = useState(0);
   
@@ -45,6 +44,7 @@ export function ProgressRing({
   const offset = circumference - (percentage / 100) * circumference;
 
   const colors = variantColors[variant];
+  const gradientId = `${variant}Gradient`;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -54,13 +54,19 @@ export function ProgressRing({
   }, [progress]);
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1">
       <div className="relative" style={{ width: size, height: size }}>
         <svg
-          className={`-rotate-90 ${colors.glow}`}
+          className="-rotate-90"
           width={size}
           height={size}
         >
+          <defs>
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={colors.gradient[0]} />
+              <stop offset="100%" stopColor={colors.gradient[1]} />
+            </linearGradient>
+          </defs>
           {/* Background ring */}
           <circle
             cx={size / 2}
@@ -69,9 +75,9 @@ export function ProgressRing({
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-muted/30"
+            className="text-muted/20"
           />
-          {/* Progress ring */}
+          {/* Progress ring with gradient */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -79,7 +85,8 @@ export function ProgressRing({
             fill="none"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
-            className={`${colors.stroke} transition-all duration-1000 ease-out`}
+            stroke={`url(#${gradientId})`}
+            className="transition-all duration-1000 ease-out"
             style={{
               strokeDasharray: circumference,
               strokeDashoffset: offset,
@@ -87,12 +94,17 @@ export function ProgressRing({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-lg font-bold ${colors.text}`}>{value}</span>
+          <span className={`text-lg font-bold text-foreground`}>{value}</span>
         </div>
       </div>
       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
         {label}
       </span>
+      {remaining && (
+        <span className={`text-xs font-semibold ${colors.text}`}>
+          {remaining}
+        </span>
+      )}
     </div>
   );
 }

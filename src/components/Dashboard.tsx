@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ProgressRing } from "./ProgressRing";
-import { Zap, Trash2 } from "lucide-react";
+import { Zap, Trash2, TrendingUp } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Button } from "./ui/button";
 import {
@@ -36,23 +36,34 @@ export function Dashboard() {
     }
   };
 
+  // Calculate remaining values
+  const remainingCalories = Math.max(0, goals.calories - todayTotals.calories);
+  const remainingProtein = Math.max(0, goals.protein - todayTotals.protein);
+  const remainingBudget = Math.max(0, goals.budget - todayTotals.cost);
+
+  // Calculate cost per 100g protein (daily insight)
+  const costPerProtein = todayTotals.protein > 0 
+    ? (todayTotals.cost / todayTotals.protein) * 100 
+    : 0;
+
   return (
-    <div className="px-4 py-6 slide-up">
-      <div className="flex items-center gap-2 mb-6">
-        <Zap className="w-6 h-6 text-primary animate-pulse-glow" />
-        <h1 className="text-2xl font-bold text-foreground">
-          Today's <span className="text-primary neon-glow-text">Progress</span>
+    <div className="px-4 py-4 slide-up">
+      <div className="flex items-center gap-2 mb-4">
+        <Zap className="w-5 h-5 text-primary" />
+        <h1 className="text-xl font-bold text-foreground">
+          Today's Progress
         </h1>
       </div>
 
-      <div className="cyber-card p-6">
-        <div className="flex justify-around items-center">
+      <div className="glass-card p-5">
+        <div className="flex justify-around items-start">
           <ProgressRing
             progress={todayTotals.calories}
             max={goals.calories}
             label="Calories"
             value={`${todayTotals.calories}`}
             variant="calories"
+            remaining={`${remainingCalories} left`}
           />
           <ProgressRing
             progress={todayTotals.protein}
@@ -60,6 +71,7 @@ export function Dashboard() {
             label="Protein"
             value={`${todayTotals.protein}g`}
             variant="protein"
+            remaining={`${remainingProtein}g left`}
           />
           <ProgressRing
             progress={todayTotals.cost}
@@ -67,54 +79,49 @@ export function Dashboard() {
             label="Spent"
             value={`$${todayTotals.cost.toFixed(2)}`}
             variant="money"
+            remaining={`$${remainingBudget.toFixed(2)} left`}
           />
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-border/30">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-xs text-muted-foreground">Goal</p>
-              <p className="text-sm font-semibold text-progress-calories">
-                {goals.calories} cal
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Goal</p>
-              <p className="text-sm font-semibold text-progress-protein">
-                {goals.protein}g
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Budget</p>
-              <p className="text-sm font-semibold text-progress-money">
-                ${goals.budget.toFixed(2)}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
-      <div className="mt-6 cyber-card p-4">
+      {/* Daily Insight Card */}
+      {todayTotals.protein > 0 && (
+        <div className="glass-card p-4 mt-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-muted-foreground">Daily Insight</span>
+          </div>
+          <p className="text-lg font-bold text-foreground mt-1">
+            ${costPerProtein.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">per 100g protein</span>
+          </p>
+        </div>
+      )}
+
+      <div className="mt-3 glass-card p-4">
         <h3 className="text-sm font-semibold text-muted-foreground mb-3">
           Recent Entries
         </h3>
         {todayLogs.length === 0 ? (
-          <p className="text-muted-foreground/60 text-center py-4 text-sm">
+          <p className="text-muted-foreground/60 text-center py-3 text-sm">
             Add your first meal to start tracking!
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {todayLogs.slice(0, 5).map((log) => (
               <div
                 key={log.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30"
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/20"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
                     {log.description}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {log.calories} cal • {log.protein}g protein • ${log.cost.toFixed(2)}
+                    <span className="text-progress-calories">{log.calories} cal</span>
+                    {" • "}
+                    <span className="text-progress-protein">{log.protein}g</span>
+                    {" • "}
+                    <span className="text-progress-money">${log.cost.toFixed(2)}</span>
                   </p>
                 </div>
                 <Button
@@ -132,7 +139,7 @@ export function Dashboard() {
       </div>
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="glass-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Entry?</AlertDialogTitle>
             <AlertDialogDescription>

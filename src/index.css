@@ -1,7 +1,4 @@
-@import '@fontsource/outfit/400.css';
-@import '@fontsource/outfit/500.css';
-@import '@fontsource/outfit/600.css';
-@import '@fontsource/outfit/700.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -18,92 +15,84 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    --primary: 150 80% 35%;
+    --primary: 160 84% 39%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 150 30% 90%;
-    --secondary-foreground: 150 80% 25%;
+    --secondary: 160 30% 90%;
+    --secondary-foreground: 160 84% 25%;
 
     --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 40%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 150 50% 85%;
-    --accent-foreground: 150 80% 25%;
+    --accent: 160 50% 85%;
+    --accent-foreground: 160 84% 25%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 0 0% 85%;
     --input: 0 0% 90%;
-    --ring: 150 80% 35%;
+    --ring: 160 84% 39%;
 
     --radius: 0.75rem;
 
-    /* Custom cyber tokens - light mode */
-    --neon-glow: 150 80% 35%;
-    --neon-glow-soft: 150 60% 45%;
-    --cyber-surface: 0 0% 97%;
-    --cyber-surface-elevated: 0 0% 100%;
-    --progress-calories: 35 100% 50%;
-    --progress-protein: 150 80% 35%;
-    --progress-money: 280 80% 50%;
+    /* Progress colors - modern palette */
+    --progress-calories: 38 92% 50%;
+    --progress-protein: 160 84% 39%;
+    --progress-money: 258 90% 66%;
 
     --sidebar-background: 0 0% 96%;
     --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 150 80% 35%;
+    --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 150 30% 90%;
-    --sidebar-accent-foreground: 150 80% 25%;
+    --sidebar-accent: 160 30% 90%;
+    --sidebar-accent-foreground: 160 84% 25%;
     --sidebar-border: 0 0% 85%;
-    --sidebar-ring: 150 80% 35%;
+    --sidebar-ring: 160 84% 39%;
   }
 
   .dark {
     --background: 0 0% 4%;
-    --foreground: 0 0% 95%;
+    --foreground: 0 0% 96%;
 
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 95%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 150 100% 50%;
-    --primary-foreground: 0 0% 4%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 150 50% 15%;
-    --secondary-foreground: 150 100% 50%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 150 80% 20%;
-    --accent-foreground: 150 100% 50%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 96%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 150 30% 15%;
+    --border: 0 0% 14%;
     --input: 0 0% 12%;
-    --ring: 150 100% 50%;
+    --ring: 160 84% 39%;
 
-    /* Custom cyber tokens - dark mode */
-    --neon-glow: 150 100% 50%;
-    --neon-glow-soft: 150 80% 40%;
-    --cyber-surface: 0 0% 8%;
-    --cyber-surface-elevated: 0 0% 10%;
-    --progress-calories: 35 100% 50%;
-    --progress-protein: 150 100% 50%;
-    --progress-money: 280 100% 60%;
+    /* Progress colors - vibrant modern palette */
+    --progress-calories: 38 92% 50%;
+    --progress-protein: 160 84% 45%;
+    --progress-money: 258 90% 66%;
 
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 150 100% 50%;
-    --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 150 50% 15%;
-    --sidebar-accent-foreground: 150 100% 50%;
-    --sidebar-border: 150 30% 15%;
-    --sidebar-ring: 150 100% 50%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 160 84% 39%;
   }
 }
 
@@ -114,7 +103,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   /* Safe area utilities for iOS */
@@ -128,60 +117,57 @@
 }
 
 @layer utilities {
-  .neon-glow {
-    box-shadow: 
-      0 0 10px hsl(var(--neon-glow) / 0.3),
-      0 0 20px hsl(var(--neon-glow) / 0.2),
-      0 0 40px hsl(var(--neon-glow) / 0.1);
+  /* Glass card effect */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm rounded-xl border border-border/20;
   }
 
-  .neon-glow-text {
-    text-shadow: 
-      0 0 10px hsl(var(--neon-glow) / 0.5),
-      0 0 20px hsl(var(--neon-glow) / 0.3);
+  /* Sleek button press animation */
+  .btn-press {
+    @apply transition-transform duration-100 active:scale-[0.98];
   }
 
-  .neon-border {
-    border-color: hsl(var(--neon-glow));
-    box-shadow: 
-      inset 0 0 10px hsl(var(--neon-glow) / 0.1),
-      0 0 10px hsl(var(--neon-glow) / 0.2);
+  /* Subtle shimmer effect */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
   }
-
-  .cyber-card {
-    @apply bg-card rounded-xl border border-border/50;
+  
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
     background: linear-gradient(
-      135deg,
-      hsl(var(--cyber-surface)) 0%,
-      hsl(var(--cyber-surface-elevated)) 100%
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.08),
+      transparent
     );
+    animation: shimmer 2s infinite;
   }
 
-  .progress-ring-glow-calories {
-    filter: drop-shadow(0 0 6px hsl(var(--progress-calories) / 0.6));
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
   }
 
-  .progress-ring-glow-protein {
-    filter: drop-shadow(0 0 6px hsl(var(--progress-protein) / 0.6));
+  /* Progress ring gradients - no glow */
+  .stroke-calories-gradient {
+    stroke: url(#caloriesGradient);
   }
 
-  .progress-ring-glow-money {
-    filter: drop-shadow(0 0 6px hsl(var(--progress-money) / 0.6));
+  .stroke-protein-gradient {
+    stroke: url(#proteinGradient);
   }
 
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
+  .stroke-money-gradient {
+    stroke: url(#moneyGradient);
   }
 
-  @keyframes pulse-glow {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
-    }
-  }
-
+  /* Slide up animation */
   .slide-up {
     animation: slide-up 0.3s ease-out;
   }
@@ -195,5 +181,14 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* Radial background gradient */
+  .bg-radial-gradient {
+    background: radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      hsl(0 0% 12%) 0%,
+      hsl(0 0% 4%) 100%
+    );
   }
 }

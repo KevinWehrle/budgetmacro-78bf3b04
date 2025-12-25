@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Outfit', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -59,14 +59,6 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
-        },
-        neon: {
-          DEFAULT: "hsl(var(--neon-glow))",
-          soft: "hsl(var(--neon-glow-soft))",
-        },
-        cyber: {
-          surface: "hsl(var(--cyber-surface))",
-          elevated: "hsl(var(--cyber-surface-elevated))",
         },
         progress: {
           calories: "hsl(var(--progress-calories))",
