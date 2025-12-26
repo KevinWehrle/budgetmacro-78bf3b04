@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -24,19 +23,11 @@ interface PantryItem {
   is_out_of_stock: boolean;
 }
 
-const SERVING_UNIT_OPTIONS = [
-  'serving',
-  'oz',
-  'g',
-  'cup',
-  'piece',
-  'slice',
-  'scoop',
-  'tbsp',
-  'tsp',
-  'ml',
-  'lb',
-];
+// Helper to limit cost to 2 decimal places
+const formatCostInput = (value: string): string => {
+  const match = value.match(/^\d*\.?\d{0,2}/);
+  return match ? match[0] : '';
+};
 
 export const Pantry = () => {
   const { user } = useAuth();
@@ -45,14 +36,12 @@ export const Pantry = () => {
   const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<PantryItem | null>(null);
   const [restoreConfirm, setRestoreConfirm] = useState<PantryItem | null>(null);
-  const [useCustomUnit, setUseCustomUnit] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     total_cost: '',
     total_servings: '',
     protein_per_serving: '',
     calories_per_serving: '',
-    serving_unit: 'serving'
   });
 
   const { data: pantryItems = [], isLoading } = useQuery({
@@ -72,11 +61,12 @@ export const Pantry = () => {
   });
 
   const addMutation = useMutation({
-    mutationFn: async (item: Omit<PantryItem, 'id' | 'is_out_of_stock'>) => {
+    mutationFn: async (item: Omit<PantryItem, 'id' | 'is_out_of_stock' | 'serving_unit'>) => {
       const { error } = await supabase.from('pantry_items').insert({
         ...item,
         user_id: user?.id,
-        current_servings: item.total_servings
+        current_servings: item.total_servings,
+        serving_unit: 'serving'
       });
       if (error) throw error;
     },
@@ -126,9 +116,11 @@ export const Pantry = () => {
       total_servings: '',
       protein_per_serving: '',
       calories_per_serving: '',
-      serving_unit: 'serving'
     });
-    setUseCustomUnit(false);
+  };
+
+  const handleCostChange = (value: string) => {
+    setFormData({ ...formData, total_cost: formatCostInput(value) });
   };
 
   const handleSubmit = () => {
@@ -139,7 +131,6 @@ export const Pantry = () => {
       current_servings: parseFloat(formData.total_servings) || 1,
       protein_per_serving: parseInt(formData.protein_per_serving) || 0,
       calories_per_serving: parseInt(formData.calories_per_serving) || 0,
-      serving_unit: formData.serving_unit
     };
 
     if (editingItem) {
@@ -151,15 +142,12 @@ export const Pantry = () => {
 
   const openEdit = (item: PantryItem) => {
     setEditingItem(item);
-    const isCustom = !SERVING_UNIT_OPTIONS.includes(item.serving_unit);
-    setUseCustomUnit(isCustom);
     setFormData({
       name: item.name,
       total_cost: item.total_cost.toString(),
       total_servings: item.total_servings.toString(),
       protein_per_serving: item.protein_per_serving.toString(),
       calories_per_serving: item.calories_per_serving.toString(),
-      serving_unit: item.serving_unit
     });
   };
 
@@ -215,11 +203,11 @@ export const Pantry = () => {
                 <div>
                   <Label>Total Cost ($)</Label>
                   <Input
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="12.99"
                     value={formData.total_cost}
-                    onChange={(e) => setFormData({ ...formData, total_cost: e.target.value })}
+                    onChange={(e) => handleCostChange(e.target.value)}
                   />
                 </div>
                 <div>
@@ -252,53 +240,6 @@ export const Pantry = () => {
                     onChange={(e) => setFormData({ ...formData, calories_per_serving: e.target.value })}
                   />
                 </div>
-              </div>
-              <div>
-                <Label>Serving Unit</Label>
-                {!useCustomUnit ? (
-                  <div className="space-y-2">
-                    <Select 
-                      value={formData.serving_unit} 
-                      onValueChange={(val) => setFormData({ ...formData, serving_unit: val })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a unit" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SERVING_UNIT_OPTIONS.map((unit) => (
-                          <SelectItem key={unit} value={unit}>
-                            {unit}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <button 
-                      type="button"
-                      className="text-xs text-primary hover:underline"
-                      onClick={() => setUseCustomUnit(true)}
-                    >
-                      Use custom unit instead
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="e.g., patty, fillet, bag"
-                      value={formData.serving_unit}
-                      onChange={(e) => setFormData({ ...formData, serving_unit: e.target.value })}
-                    />
-                    <button 
-                      type="button"
-                      className="text-xs text-primary hover:underline"
-                      onClick={() => {
-                        setUseCustomUnit(false);
-                        setFormData({ ...formData, serving_unit: 'serving' });
-                      }}
-                    >
-                      Use preset units instead
-                    </button>
-                  </div>
-                )}
               </div>
               <Button 
                 onClick={handleSubmit} 
@@ -340,17 +281,17 @@ export const Pantry = () => {
                       <h4 className="font-semibold text-foreground">{item.name}</h4>
                       <div className="flex flex-wrap gap-3 mt-2 text-sm">
                         <span className="text-progress-calories">
-                          {item.calories_per_serving} cal/{item.serving_unit}
+                          {item.calories_per_serving} cal/serving
                         </span>
                         <span className="text-progress-protein">
-                          {item.protein_per_serving}g protein/{item.serving_unit}
+                          {item.protein_per_serving}g protein/serving
                         </span>
                         <span className="text-progress-money">
-                          ${costPerServing(item).toFixed(2)}/{item.serving_unit}
+                          ${costPerServing(item).toFixed(2)}/serving
                         </span>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">
-                        {item.current_servings.toFixed(1)} of {item.total_servings} {item.serving_unit}s remaining
+                        {item.current_servings.toFixed(1)} of {item.total_servings} servings remaining
                       </div>
                       <div className="w-full bg-muted rounded-full h-1.5 mt-2">
                         <div 
@@ -396,7 +337,7 @@ export const Pantry = () => {
                     <div>
                       <h4 className="font-semibold text-foreground">{item.name}</h4>
                       <p className="text-sm text-muted-foreground">
-                        <span className="text-progress-money">${costPerServing(item).toFixed(2)}/{item.serving_unit}</span>
+                        <span className="text-progress-money">${costPerServing(item).toFixed(2)}/serving</span>
                         {' • '}
                         <span className="text-progress-protein">{item.protein_per_serving}g protein</span>
                       </p>
@@ -454,7 +395,7 @@ export const Pantry = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Restock Item?</AlertDialogTitle>
             <AlertDialogDescription>
-              Add "{restoreConfirm?.name}" back to your pantry with {restoreConfirm?.total_servings} {restoreConfirm?.serving_unit}s?
+              Add "{restoreConfirm?.name}" back to your pantry with {restoreConfirm?.total_servings} servings?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

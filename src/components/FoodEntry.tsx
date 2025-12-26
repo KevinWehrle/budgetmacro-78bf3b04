@@ -66,6 +66,12 @@ export function FoodEntry() {
     cost: ""
   });
 
+  // Helper to limit cost to 2 decimal places
+  const formatCostInput = (value: string): string => {
+    const match = value.match(/^\d*\.?\d{0,2}/);
+    return match ? match[0] : '';
+  };
+
   const { data: pantryItems = [] } = useQuery({
     queryKey: ['pantry-items', user?.id],
     queryFn: async () => {
@@ -710,11 +716,11 @@ export function FoodEntry() {
             <div>
               <label className="text-sm text-muted-foreground mb-1 block">Cost ($)</label>
               <Input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={manualEntry.cost}
-                onChange={(e) => setManualEntry({ ...manualEntry, cost: e.target.value })}
+                onChange={(e) => setManualEntry({ ...manualEntry, cost: formatCostInput(e.target.value) })}
               />
             </div>
           </div>

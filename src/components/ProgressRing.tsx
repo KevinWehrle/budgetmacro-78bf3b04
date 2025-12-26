@@ -18,11 +18,11 @@ const variantColors = {
     text: "text-progress-calories",
   },
   protein: {
-    gradient: ["#059669", "#10B981"], // Forest green to emerald
+    gradient: ["#7C3AED", "#8B5CF6"], // Violet to purple
     text: "text-progress-protein",
   },
   money: {
-    gradient: ["#7C3AED", "#8B5CF6"], // Violet to purple
+    gradient: ["#059669", "#10B981"], // Forest green to emerald
     text: "text-progress-money",
   },
 };
@@ -36,13 +36,12 @@ export function ProgressRing({
   value,
   variant,
   remaining,
-  sizeVariant = "default",
 }: ProgressRingProps) {
   const [animatedProgress, setAnimatedProgress] = useState(0);
   
-  // Determine size based on sizeVariant
-  const size = customSize ?? (sizeVariant === "large" ? 140 : 100);
-  const strokeWidth = customStrokeWidth ?? (sizeVariant === "large" ? 12 : 10);
+  // All rings are the same size
+  const size = customSize ?? 100;
+  const strokeWidth = customStrokeWidth ?? 10;
   
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -60,8 +59,8 @@ export function ProgressRing({
   }, [progress]);
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative" style={{ width: size, height: size }}>
+    <div className="flex items-center gap-4 w-full">
+      <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg
           className="-rotate-90"
           width={size}
@@ -103,14 +102,16 @@ export function ProgressRing({
           <span className={`text-lg font-bold text-foreground`}>{value}</span>
         </div>
       </div>
-      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-        {label}
-      </span>
-      {remaining && (
-        <span className={`text-xs font-semibold ${colors.text}`}>
-          {remaining}
+      <div className="flex flex-col min-w-0">
+        <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          {label}
         </span>
-      )}
+        {remaining && (
+          <span className={`text-sm font-semibold ${colors.text}`}>
+            {remaining}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -37,6 +37,7 @@ interface DayHistory {
 interface AppContextType {
   foodLogs: FoodLog[];
   addFoodLog: (log: Omit<FoodLog, "id" | "timestamp">) => void;
+  updateFoodLog: (id: string, log: Omit<FoodLog, "id" | "timestamp">) => void;
   deleteFoodLog: (id: string) => void;
   clearFoodLogs: () => void;
   goals: Goals;
@@ -213,6 +214,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const updateFoodLog = useCallback(async (id: string, log: Omit<FoodLog, "id" | "timestamp">) => {
+    if (!user) return;
+
+    const previousLogs = foodLogs;
+    // Optimistic update
+    setFoodLogs((prev) => 
+      prev.map((l) => l.id === id ? { ...l, ...log } : l)
+    );
+
+    try {
+      const { error } = await supabase
+        .from("food_logs")
+        .update({
+          description: log.description,
+          calories: log.calories,
+          protein: log.protein,
+          cost: log.cost,
+        })
+        .eq("id", id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating food log:", error);
+      // Revert optimistic update
+      setFoodLogs(previousLogs);
+      toast.error("Failed to update entry");
+    }
+  }, [user, foodLogs]);
+
   const deleteFoodLog = useCallback(async (id: string) => {
     if (!user) return;
 
@@ -317,6 +348,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         foodLogs,
         addFoodLog,
+        updateFoodLog,
         deleteFoodLog,
         clearFoodLogs,
         goals,
