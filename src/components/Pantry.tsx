@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Plus, Package, Trash2, Edit2, AlertCircle } from 'lucide-react';
+import { Plus, Package, Trash2, Edit2, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -22,11 +24,28 @@ interface PantryItem {
   is_out_of_stock: boolean;
 }
 
+const SERVING_UNIT_OPTIONS = [
+  'serving',
+  'oz',
+  'g',
+  'cup',
+  'piece',
+  'slice',
+  'scoop',
+  'tbsp',
+  'tsp',
+  'ml',
+  'lb',
+];
+
 export const Pantry = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<PantryItem | null>(null);
+  const [restoreConfirm, setRestoreConfirm] = useState<PantryItem | null>(null);
+  const [useCustomUnit, setUseCustomUnit] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     total_cost: '',
@@ -95,6 +114,7 @@ export const Pantry = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pantry-items'] });
       toast.success('Item removed');
+      setDeleteConfirm(null);
     },
     onError: () => toast.error('Failed to remove item')
   });
@@ -108,6 +128,7 @@ export const Pantry = () => {
       calories_per_serving: '',
       serving_unit: 'serving'
     });
+    setUseCustomUnit(false);
   };
 
   const handleSubmit = () => {
@@ -130,6 +151,8 @@ export const Pantry = () => {
 
   const openEdit = (item: PantryItem) => {
     setEditingItem(item);
+    const isCustom = !SERVING_UNIT_OPTIONS.includes(item.serving_unit);
+    setUseCustomUnit(isCustom);
     setFormData({
       name: item.name,
       total_cost: item.total_cost.toString(),
@@ -146,6 +169,7 @@ export const Pantry = () => {
       current_servings: item.total_servings,
       is_out_of_stock: false
     });
+    setRestoreConfirm(null);
   };
 
   const costPerServing = (item: PantryItem) => 
@@ -155,7 +179,7 @@ export const Pantry = () => {
   const outOfStockItems = pantryItems.filter(i => i.is_out_of_stock);
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="px-4 space-y-6 pb-24">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Your Pantry</h2>
@@ -231,11 +255,50 @@ export const Pantry = () => {
               </div>
               <div>
                 <Label>Serving Unit</Label>
-                <Input
-                  placeholder="serving, oz, cup, piece"
-                  value={formData.serving_unit}
-                  onChange={(e) => setFormData({ ...formData, serving_unit: e.target.value })}
-                />
+                {!useCustomUnit ? (
+                  <div className="space-y-2">
+                    <Select 
+                      value={formData.serving_unit} 
+                      onValueChange={(val) => setFormData({ ...formData, serving_unit: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SERVING_UNIT_OPTIONS.map((unit) => (
+                          <SelectItem key={unit} value={unit}>
+                            {unit}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <button 
+                      type="button"
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setUseCustomUnit(true)}
+                    >
+                      Use custom unit instead
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="e.g., patty, fillet, bag"
+                      value={formData.serving_unit}
+                      onChange={(e) => setFormData({ ...formData, serving_unit: e.target.value })}
+                    />
+                    <button 
+                      type="button"
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => {
+                        setUseCustomUnit(false);
+                        setFormData({ ...formData, serving_unit: 'serving' });
+                      }}
+                    >
+                      Use preset units instead
+                    </button>
+                  </div>
+                )}
               </div>
               <Button 
                 onClick={handleSubmit} 
@@ -276,13 +339,13 @@ export const Pantry = () => {
                     <div className="flex-1">
                       <h4 className="font-semibold text-foreground">{item.name}</h4>
                       <div className="flex flex-wrap gap-3 mt-2 text-sm">
-                        <span className="text-calories">
+                        <span className="text-progress-calories">
                           {item.calories_per_serving} cal/{item.serving_unit}
                         </span>
-                        <span className="text-protein">
+                        <span className="text-progress-protein">
                           {item.protein_per_serving}g protein/{item.serving_unit}
                         </span>
-                        <span className="text-spent">
+                        <span className="text-progress-money">
                           ${costPerServing(item).toFixed(2)}/{item.serving_unit}
                         </span>
                       </div>
@@ -291,7 +354,7 @@ export const Pantry = () => {
                       </div>
                       <div className="w-full bg-muted rounded-full h-1.5 mt-2">
                         <div 
-                          className="bg-protein h-1.5 rounded-full transition-all"
+                          className="bg-progress-money h-1.5 rounded-full transition-all"
                           style={{ width: `${(item.current_servings / item.total_servings) * 100}%` }}
                         />
                       </div>
@@ -307,7 +370,7 @@ export const Pantry = () => {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => deleteMutation.mutate(item.id)}
+                        onClick={() => setDeleteConfirm(item)}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -322,29 +385,36 @@ export const Pantry = () => {
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-destructive" />
-                Out of Stock ({outOfStockItems.length})
+                Previous Items ({outOfStockItems.length})
               </h3>
+              <p className="text-xs text-muted-foreground">
+                Tap restock to add items back to your pantry from previous grocery trips
+              </p>
               {outOfStockItems.map((item) => (
                 <Card key={item.id} className="p-4 opacity-60">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-semibold text-foreground">{item.name}</h4>
                       <p className="text-sm text-muted-foreground">
-                        ${costPerServing(item).toFixed(2)}/{item.serving_unit} • {item.protein_per_serving}g protein
+                        <span className="text-progress-money">${costPerServing(item).toFixed(2)}/{item.serving_unit}</span>
+                        {' • '}
+                        <span className="text-progress-protein">{item.protein_per_serving}g protein</span>
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => restockItem(item)}
+                        className="gap-1"
+                        onClick={() => setRestoreConfirm(item)}
                       >
+                        <RotateCcw className="w-3 h-3" />
                         Restock
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => deleteMutation.mutate(item.id)}
+                        onClick={() => setDeleteConfirm(item)}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -356,6 +426,47 @@ export const Pantry = () => {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent className="bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Pantry Item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteConfirm?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteConfirm && deleteMutation.mutate(deleteConfirm.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restock Confirmation Dialog */}
+      <AlertDialog open={!!restoreConfirm} onOpenChange={(open) => !open && setRestoreConfirm(null)}>
+        <AlertDialogContent className="bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restock Item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Add "{restoreConfirm?.name}" back to your pantry with {restoreConfirm?.total_servings} {restoreConfirm?.serving_unit}s?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => restoreConfirm && restockItem(restoreConfirm)}
+            >
+              Restock
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
