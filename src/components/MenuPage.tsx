@@ -32,7 +32,7 @@ export function MenuPage() {
   return (
     <div className="px-4 py-6 slide-up">
       <h1 className="text-2xl font-bold text-foreground mb-6">
-        <span className="text-primary neon-glow-text">Menu</span>
+        Menu
       </h1>
 
       <div className="space-y-3">
