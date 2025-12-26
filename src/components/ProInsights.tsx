@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Info, TrendingUp, Gauge, Trophy, Sparkles, X } from 'lucide-react';
+import { LayoutDashboard, Info, TrendingUp, Gauge, Trophy, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +31,7 @@ export function ProInsights() {
   const { history, goals } = useApp();
   const { user } = useAuth();
   const [infoModal, setInfoModal] = useState<string | null>(null);
+  const [selectedFoodName, setSelectedFoodName] = useState<string | null>(null);
 
   // Fetch pantry items
   const { data: pantryItems = [] } = useQuery({
@@ -283,7 +284,13 @@ export function ProInsights() {
                   <span className={`text-sm font-bold ${index === 0 ? 'text-[#10B981]' : 'text-muted-foreground'}`}>
                     #{index + 1}
                   </span>
-                  <span className="text-sm text-foreground truncate max-w-[150px]">{food.name}</span>
+                  <button
+                    onClick={() => setSelectedFoodName(food.name)}
+                    className="text-sm text-foreground truncate max-w-[150px] text-left hover:text-primary transition-colors"
+                    title="Tap to see full name"
+                  >
+                    {food.name}
+                  </button>
                 </div>
                 <div className="text-right">
                   <span className="text-sm font-medium text-[#8B5CF6]">
@@ -299,7 +306,9 @@ export function ProInsights() {
       {/* Smart AI Suggestions */}
       <Card className="p-4 bg-[#0a0a0a]/80 border border-white/10 backdrop-blur-sm">
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-[#8B5CF6]" />
+          <div className="p-1.5 rounded-lg bg-primary/20">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
           <span className="text-sm font-medium text-foreground">Smart AI Suggestions</span>
         </div>
         {recommendations.length === 0 ? (
@@ -345,6 +354,16 @@ export function ProInsights() {
           <p className="text-sm text-muted-foreground">
             {infoModal && infoDescriptions[infoModal]?.description}
           </p>
+        </DialogContent>
+      </Dialog>
+
+      {/* Food Name Modal */}
+      <Dialog open={!!selectedFoodName} onOpenChange={(open) => !open && setSelectedFoodName(null)}>
+        <DialogContent className="bg-[#0a0a0a] border border-white/10">
+          <DialogHeader>
+            <DialogTitle>Food Item</DialogTitle>
+          </DialogHeader>
+          <p className="text-foreground">{selectedFoodName}</p>
         </DialogContent>
       </Dialog>
     </div>
