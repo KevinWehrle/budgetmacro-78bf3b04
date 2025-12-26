@@ -6,6 +6,7 @@ import { FoodEntry } from "@/components/FoodEntry";
 import { ValueFoods } from "@/components/ValueFoods";
 import { History } from "@/components/History";
 import { MenuPage } from "@/components/MenuPage";
+import { Pantry } from "@/components/Pantry";
 
 import { useApp } from "@/context/AppContext";
 
@@ -38,7 +39,7 @@ const Index = () => {
       <main className="max-w-md mx-auto">
         {activeTab === "dashboard" && <Dashboard />}
         {activeTab === "add" && <FoodEntry />}
-        {activeTab === "foods" && <ValueFoods />}
+        {activeTab === "pantry" && <Pantry />}
         {activeTab === "history" && <History />}
         {activeTab === "menu" && <MenuPage />}
       </main>

@@ -10,10 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import { Sparkles, Loader2, Flame, Dumbbell, DollarSign, Check, X, Pencil } from "lucide-react";
+import { Sparkles, Loader2, Flame, Dumbbell, DollarSign, Check, X, Pencil, Package, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/context/AppContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card } from "./ui/card";
+import { Badge } from "./ui/badge";
 
 interface FoodEstimate {
   description: string;
@@ -22,16 +26,77 @@ interface FoodEstimate {
   cost: number;
 }
 
+interface PantryItem {
+  id: string;
+  name: string;
+  total_cost: number;
+  total_servings: number;
+  current_servings: number;
+  protein_per_serving: number;
+  calories_per_serving: number;
+  serving_unit: string;
+  is_out_of_stock: boolean;
+}
+
+type EntryMode = 'select' | 'pantry' | 'manual' | 'ai';
+
 export function FoodEntry() {
   const { addFoodLog } = useApp();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  const [mode, setMode] = useState<EntryMode>('select');
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [estimate, setEstimate] = useState<FoodEstimate | null>(null);
   const [editingField, setEditingField] = useState<'calories' | 'protein' | 'cost' | null>(null);
   const [editValues, setEditValues] = useState({ calories: "", protein: "", cost: "" });
+  
+  // Pantry state
+  const [selectedPantryItem, setSelectedPantryItem] = useState<PantryItem | null>(null);
+  const [servingsAmount, setServingsAmount] = useState("");
+  const [showPantryConfirm, setShowPantryConfirm] = useState(false);
 
-  const handleSubmit = async () => {
+  // Manual entry state
+  const [manualEntry, setManualEntry] = useState({
+    description: "",
+    calories: "",
+    protein: "",
+    cost: ""
+  });
+
+  const { data: pantryItems = [] } = useQuery({
+    queryKey: ['pantry-items', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('pantry_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_out_of_stock', false)
+        .order('name');
+      
+      if (error) throw error;
+      return data as PantryItem[];
+    },
+    enabled: !!user
+  });
+
+  const updatePantryMutation = useMutation({
+    mutationFn: async ({ id, current_servings, is_out_of_stock }: { id: string; current_servings: number; is_out_of_stock: boolean }) => {
+      const { error } = await supabase
+        .from('pantry_items')
+        .update({ current_servings, is_out_of_stock })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pantry-items'] });
+    }
+  });
+
+  const handleAISubmit = async () => {
     if (!input.trim()) {
       toast.error("Please describe what you ate");
       return;
@@ -105,6 +170,7 @@ export function FoodEntry() {
       setEstimate(null);
       setEditValues({ calories: "", protein: "", cost: "" });
       setShowConfirm(false);
+      setMode('select');
     }
   };
 
@@ -113,6 +179,79 @@ export function FoodEntry() {
     setEstimate(null);
     setEditValues({ calories: "", protein: "", cost: "" });
     setEditingField(null);
+  };
+
+  const handlePantryItemSelect = (item: PantryItem) => {
+    setSelectedPantryItem(item);
+    setServingsAmount("1");
+    setShowPantryConfirm(true);
+  };
+
+  const calculatePantryMeal = () => {
+    if (!selectedPantryItem) return null;
+    const servings = parseFloat(servingsAmount) || 0;
+    const costPerServing = selectedPantryItem.total_cost / selectedPantryItem.total_servings;
+    
+    return {
+      calories: Math.round(selectedPantryItem.calories_per_serving * servings),
+      protein: Math.round(selectedPantryItem.protein_per_serving * servings),
+      cost: Math.round(costPerServing * servings * 100) / 100
+    };
+  };
+
+  const handlePantryConfirm = () => {
+    if (!selectedPantryItem) return;
+    
+    const servings = parseFloat(servingsAmount) || 0;
+    const meal = calculatePantryMeal();
+    if (!meal) return;
+
+    // Log the food
+    addFoodLog({
+      description: `${servings} ${selectedPantryItem.serving_unit}(s) of ${selectedPantryItem.name}`,
+      calories: meal.calories,
+      protein: meal.protein,
+      cost: meal.cost
+    });
+
+    // Update pantry inventory
+    const newServings = selectedPantryItem.current_servings - servings;
+    const isOutOfStock = newServings <= 0;
+    
+    updatePantryMutation.mutate({
+      id: selectedPantryItem.id,
+      current_servings: Math.max(0, newServings),
+      is_out_of_stock: isOutOfStock
+    });
+
+    toast.success("Food logged from pantry!", {
+      description: isOutOfStock 
+        ? `${selectedPantryItem.name} is now out of stock`
+        : `${newServings.toFixed(1)} ${selectedPantryItem.serving_unit}s remaining`
+    });
+
+    setShowPantryConfirm(false);
+    setSelectedPantryItem(null);
+    setServingsAmount("");
+    setMode('select');
+  };
+
+  const handleManualSubmit = () => {
+    if (!manualEntry.description.trim()) {
+      toast.error("Please add a description");
+      return;
+    }
+
+    addFoodLog({
+      description: manualEntry.description,
+      calories: parseInt(manualEntry.calories) || 0,
+      protein: parseInt(manualEntry.protein) || 0,
+      cost: parseFloat(manualEntry.cost) || 0
+    });
+
+    toast.success("Food logged!");
+    setManualEntry({ description: "", calories: "", protein: "", cost: "" });
+    setMode('select');
   };
 
   const estimateNutritionFallback = (text: string) => {
@@ -302,54 +441,326 @@ export function FoodEntry() {
     return { calories, protein, cost: Math.round(cost * 100) / 100 };
   };
 
-  return (
-    <div className="px-4 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
-      <div className="w-full max-w-md slide-up">
-        <div className="flex items-center gap-2 mb-6 justify-center">
-          <Sparkles className="w-5 h-5 text-primary" />
-          <h1 className="text-xl font-bold text-foreground">
-            AI Food Entry
-          </h1>
+  const pantryMeal = calculatePantryMeal();
+
+  // Mode Selection Screen
+  if (mode === 'select') {
+    return (
+      <div className="px-4 py-6 space-y-6 pb-24">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Log Food</h1>
+          <p className="text-sm text-muted-foreground">Choose how you'd like to log your meal</p>
         </div>
 
-        <div className="glass-card p-4">
-          <p className="text-sm text-muted-foreground mb-3 text-center">
-            Describe what you ate and I'll estimate the nutrition and cost.
-          </p>
-          <p className="text-xs text-muted-foreground/70 mb-4 text-center italic">
-            AI estimates cost based on local averages; please verify for accuracy.
-          </p>
-
-          <Textarea
-            placeholder="e.g., 3 eggs, a chicken breast with rice, protein shake..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="min-h-[100px] bg-background/50 border-border/30 focus:border-primary resize-none mb-4"
-          />
-
-          <Button
-            variant="sleek"
-            size="lg"
-            className="w-full shimmer"
-            onClick={handleSubmit}
-            disabled={isLoading}
+        <div className="space-y-4">
+          <Card 
+            className="p-5 cursor-pointer hover:bg-muted/30 transition-colors"
+            onClick={() => setMode('pantry')}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Analyze Food
-              </>
-            )}
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-protein/20">
+                <Package className="w-6 h-6 text-protein" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-1">Log from Pantry</h3>
+                <p className="text-sm text-muted-foreground">
+                  Select from your tracked inventory. Auto-calculates cost & macros.
+                </p>
+                {pantryItems.length > 0 && (
+                  <Badge variant="secondary" className="mt-2">
+                    {pantryItems.length} items in stock
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-5 cursor-pointer hover:bg-muted/30 transition-colors"
+            onClick={() => setMode('manual')}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-calories/20">
+                <Pencil className="w-6 h-6 text-calories" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-1">Quick Log (Manual)</h3>
+                <p className="text-sm text-muted-foreground">
+                  Enter calories, protein, and cost yourself
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-5 cursor-pointer hover:bg-muted/30 transition-colors relative overflow-hidden"
+            onClick={() => setMode('ai')}
+          >
+            <Badge className="absolute top-3 right-3 bg-primary/20 text-primary border-primary/30">
+              <FlaskConical className="w-3 h-3 mr-1" />
+              Beta
+            </Badge>
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-primary/20">
+                <Sparkles className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-1">AI Estimate</h3>
+                <p className="text-sm text-muted-foreground">
+                  Describe your meal and AI estimates the nutrition
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Pantry Selection Screen
+  if (mode === 'pantry') {
+    return (
+      <div className="px-4 py-6 space-y-6 pb-24">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => setMode('select')}>
+            ← Back
           </Button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Log from Pantry</h1>
+            <p className="text-sm text-muted-foreground">Select an item to log</p>
+          </div>
+        </div>
+
+        {pantryItems.length === 0 ? (
+          <Card className="p-8 text-center">
+            <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">Pantry is Empty</h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              Add items to your pantry first to log from here
+            </p>
+            <Button variant="outline" onClick={() => setMode('select')}>
+              Go Back
+            </Button>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {pantryItems.map((item) => {
+              const costPerServing = item.total_cost / item.total_servings;
+              return (
+                <Card 
+                  key={item.id}
+                  className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => handlePantryItemSelect(item)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-foreground">{item.name}</h4>
+                      <div className="flex gap-3 mt-1 text-sm">
+                        <span className="text-calories">{item.calories_per_serving} cal</span>
+                        <span className="text-protein">{item.protein_per_serving}g</span>
+                        <span className="text-spent">${costPerServing.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">
+                        {item.current_servings.toFixed(1)} left
+                      </p>
+                      <p className="text-xs text-muted-foreground/70">{item.serving_unit}s</p>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pantry Confirm Dialog */}
+        <Dialog open={showPantryConfirm} onOpenChange={setShowPantryConfirm}>
+          <DialogContent className="glass-card max-w-sm mx-auto">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">
+                Log {selectedPantryItem?.name}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                How many {selectedPantryItem?.serving_unit}s are you eating?
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4 space-y-4">
+              <div>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  max={selectedPantryItem?.current_servings}
+                  value={servingsAmount}
+                  onChange={(e) => setServingsAmount(e.target.value)}
+                  className="text-center text-2xl font-bold h-14"
+                  placeholder="1"
+                />
+                <p className="text-center text-sm text-muted-foreground mt-2">
+                  {selectedPantryItem?.current_servings.toFixed(1)} {selectedPantryItem?.serving_unit}s available
+                </p>
+              </div>
+
+              {pantryMeal && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="glass-card p-3 text-center">
+                    <Flame className="w-5 h-5 text-calories mx-auto mb-1" />
+                    <p className="text-lg font-bold text-foreground">{pantryMeal.calories}</p>
+                    <p className="text-xs text-muted-foreground">calories</p>
+                  </div>
+                  <div className="glass-card p-3 text-center">
+                    <Dumbbell className="w-5 h-5 text-protein mx-auto mb-1" />
+                    <p className="text-lg font-bold text-foreground">{pantryMeal.protein}g</p>
+                    <p className="text-xs text-muted-foreground">protein</p>
+                  </div>
+                  <div className="glass-card p-3 text-center">
+                    <DollarSign className="w-5 h-5 text-spent mx-auto mb-1" />
+                    <p className="text-lg font-bold text-foreground">${pantryMeal.cost.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">cost</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="flex gap-2 sm:gap-2">
+              <Button variant="outline" onClick={() => setShowPantryConfirm(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={handlePantryConfirm} 
+                className="flex-1"
+                disabled={!servingsAmount || parseFloat(servingsAmount) <= 0}
+              >
+                <Check className="w-4 h-4" />
+                Confirm & Log
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // Manual Entry Screen
+  if (mode === 'manual') {
+    return (
+      <div className="px-4 py-6 space-y-6 pb-24">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => setMode('select')}>
+            ← Back
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Quick Log</h1>
+            <p className="text-sm text-muted-foreground">Enter details manually</p>
+          </div>
+        </div>
+
+        <Card className="p-4 space-y-4">
+          <div>
+            <label className="text-sm text-muted-foreground mb-1 block">Description</label>
+            <Input
+              placeholder="e.g., Lunch - Chicken and rice"
+              value={manualEntry.description}
+              onChange={(e) => setManualEntry({ ...manualEntry, description: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-sm text-muted-foreground mb-1 block">Calories</label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={manualEntry.calories}
+                onChange={(e) => setManualEntry({ ...manualEntry, calories: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1 block">Protein (g)</label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={manualEntry.protein}
+                onChange={(e) => setManualEntry({ ...manualEntry, protein: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1 block">Cost ($)</label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={manualEntry.cost}
+                onChange={(e) => setManualEntry({ ...manualEntry, cost: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <Button className="w-full" onClick={handleManualSubmit}>
+            <Check className="w-4 h-4" />
+            Log Entry
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // AI Entry Screen
+  return (
+    <div className="px-4 py-6 space-y-6 pb-24">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={() => setMode('select')}>
+          ← Back
+        </Button>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-foreground">AI Estimate</h1>
+            <Badge className="bg-primary/20 text-primary border-primary/30">
+              <FlaskConical className="w-3 h-3 mr-1" />
+              Beta
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">Describe what you ate</p>
         </div>
       </div>
 
-      {/* Review & Edit Modal */}
+      <Card className="p-4 space-y-4">
+        <p className="text-xs text-muted-foreground/70 text-center italic">
+          AI estimates cost based on local averages; please verify for accuracy.
+        </p>
+
+        <Textarea
+          placeholder="e.g., 3 eggs, a chicken breast with rice, protein shake..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="min-h-[100px] bg-background/50 border-border/30 focus:border-primary resize-none"
+        />
+
+        <Button
+          variant="sleek"
+          size="lg"
+          className="w-full shimmer"
+          onClick={handleAISubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              Analyze Food
+            </>
+          )}
+        </Button>
+      </Card>
+
+      {/* AI Review & Edit Modal */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent className="glass-card max-w-sm mx-auto">
           <DialogHeader>

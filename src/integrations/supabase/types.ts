@@ -107,6 +107,51 @@ export type Database = {
         }
         Relationships: []
       }
+      pantry_items: {
+        Row: {
+          calories_per_serving: number
+          created_at: string
+          current_servings: number
+          id: string
+          is_out_of_stock: boolean
+          name: string
+          protein_per_serving: number
+          serving_unit: string
+          total_cost: number
+          total_servings: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calories_per_serving?: number
+          created_at?: string
+          current_servings?: number
+          id?: string
+          is_out_of_stock?: boolean
+          name: string
+          protein_per_serving?: number
+          serving_unit?: string
+          total_cost?: number
+          total_servings?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calories_per_serving?: number
+          created_at?: string
+          current_servings?: number
+          id?: string
+          is_out_of_stock?: boolean
+          name?: string
+          protein_per_serving?: number
+          serving_unit?: string
+          total_cost?: number
+          total_servings?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_goals: {
         Row: {
           budget: number
