@@ -14,54 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_recommendations: {
-        Row: {
-          confidence_score: number
-          created_at: string
-          id: string
-          insight_text: string
-          user_id: string
-        }
-        Insert: {
-          confidence_score?: number
-          created_at?: string
-          id?: string
-          insight_text: string
-          user_id: string
-        }
-        Update: {
-          confidence_score?: number
-          created_at?: string
-          id?: string
-          insight_text?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      api_rate_limits: {
-        Row: {
-          endpoint: string
-          id: string
-          request_count: number
-          user_id: string
-          window_start: string
-        }
-        Insert: {
-          endpoint: string
-          id?: string
-          request_count?: number
-          user_id: string
-          window_start?: string
-        }
-        Update: {
-          endpoint?: string
-          id?: string
-          request_count?: number
-          user_id?: string
-          window_start?: string
-        }
-        Relationships: []
-      }
       day_history: {
         Row: {
           calories: number
@@ -74,6 +26,7 @@ export type Database = {
           id: string
           protein: number
           user_id: string
+          waste_cost: number
         }
         Insert: {
           calories?: number
@@ -86,6 +39,7 @@ export type Database = {
           id?: string
           protein?: number
           user_id: string
+          waste_cost?: number
         }
         Update: {
           calories?: number
@@ -98,79 +52,182 @@ export type Database = {
           id?: string
           protein?: number
           user_id?: string
+          waste_cost?: number
         }
         Relationships: []
       }
       food_logs: {
         Row: {
+          amount_consumed: number | null
           calories: number
           cost: number
           created_at: string
           description: string
           id: string
+          pantry_item_id: string | null
           protein: number
           user_id: string
         }
         Insert: {
-          calories: number
-          cost: number
+          amount_consumed?: number | null
+          calories?: number
+          cost?: number
           created_at?: string
           description: string
           id?: string
-          protein: number
+          pantry_item_id?: string | null
+          protein?: number
           user_id: string
         }
         Update: {
+          amount_consumed?: number | null
           calories?: number
           cost?: number
           created_at?: string
           description?: string
           id?: string
+          pantry_item_id?: string | null
           protein?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "food_logs_pantry_item_id_fkey"
+            columns: ["pantry_item_id"]
+            isOneToOne: false
+            referencedRelation: "pantry_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pantry_items: {
         Row: {
-          calories_per_serving: number
+          calories_per_100g: number | null
+          calories_per_serving: number | null
           created_at: string
-          current_servings: number
+          current_servings: number | null
+          current_weight: number | null
+          expires_at: string | null
           id: string
           is_out_of_stock: boolean
           name: string
-          protein_per_serving: number
-          serving_unit: string
+          protein_per_100g: number | null
+          protein_per_serving: number | null
+          serving_unit: string | null
+          store_id: string | null
           total_cost: number
-          total_servings: number
+          total_servings: number | null
+          total_weight: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          calories_per_serving?: number
+          calories_per_100g?: number | null
+          calories_per_serving?: number | null
           created_at?: string
-          current_servings?: number
+          current_servings?: number | null
+          current_weight?: number | null
+          expires_at?: string | null
           id?: string
           is_out_of_stock?: boolean
           name: string
-          protein_per_serving?: number
-          serving_unit?: string
+          protein_per_100g?: number | null
+          protein_per_serving?: number | null
+          serving_unit?: string | null
+          store_id?: string | null
           total_cost?: number
-          total_servings?: number
+          total_servings?: number | null
+          total_weight?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          calories_per_serving?: number
+          calories_per_100g?: number | null
+          calories_per_serving?: number | null
           created_at?: string
-          current_servings?: number
+          current_servings?: number | null
+          current_weight?: number | null
+          expires_at?: string | null
           id?: string
           is_out_of_stock?: boolean
           name?: string
-          protein_per_serving?: number
-          serving_unit?: string
+          protein_per_100g?: number | null
+          protein_per_serving?: number | null
+          serving_unit?: string | null
+          store_id?: string | null
           total_cost?: number
-          total_servings?: number
+          total_servings?: number | null
+          total_weight?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pantry_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_history: {
+        Row: {
+          cost_at_time: number
+          created_at: string
+          date_recorded: string
+          id: string
+          pantry_item_id: string
+          user_id: string
+        }
+        Insert: {
+          cost_at_time: number
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          pantry_item_id: string
+          user_id: string
+        }
+        Update: {
+          cost_at_time?: number
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          pantry_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_history_pantry_item_id_fkey"
+            columns: ["pantry_item_id"]
+            isOneToOne: false
+            referencedRelation: "pantry_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          created_at: string
+          id: string
+          location_tag: string | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location_tag?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location_tag?: string | null
+          name?: string
           updated_at?: string
           user_id?: string
         }
@@ -220,6 +277,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      waste_logs: {
+        Row: {
+          amount_wasted: number
+          cost_lost: number
+          created_at: string
+          id: string
+          is_expired: boolean
+          item_name: string
+          pantry_item_id: string | null
+          user_id: string
+          waste_reason: string | null
+        }
+        Insert: {
+          amount_wasted: number
+          cost_lost?: number
+          created_at?: string
+          id?: string
+          is_expired?: boolean
+          item_name: string
+          pantry_item_id?: string | null
+          user_id: string
+          waste_reason?: string | null
+        }
+        Update: {
+          amount_wasted?: number
+          cost_lost?: number
+          created_at?: string
+          id?: string
+          is_expired?: boolean
+          item_name?: string
+          pantry_item_id?: string | null
+          user_id?: string
+          waste_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waste_logs_pantry_item_id_fkey"
+            columns: ["pantry_item_id"]
+            isOneToOne: false
+            referencedRelation: "pantry_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
