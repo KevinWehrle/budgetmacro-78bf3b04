@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ProgressRing } from "./ProgressRing";
-import { Zap, Trash2, TrendingUp } from "lucide-react";
+import { Zap, Trash2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Button } from "./ui/button";
 import {
@@ -41,11 +41,6 @@ export function Dashboard() {
   const remainingProtein = Math.max(0, goals.protein - todayTotals.protein);
   const remainingBudget = Math.max(0, goals.budget - todayTotals.cost);
 
-  // Calculate cost per 100g protein (daily insight)
-  const costPerProtein = todayTotals.protein > 0 
-    ? (todayTotals.cost / todayTotals.protein) * 100 
-    : 0;
-
   return (
     <div className="px-4 py-4 slide-up">
       <div className="flex items-center gap-2 mb-4">
@@ -56,7 +51,7 @@ export function Dashboard() {
       </div>
 
       <div className="glass-card p-5">
-        <div className="flex justify-around items-start">
+        <div className="flex flex-col items-center gap-6">
           <ProgressRing
             progress={todayTotals.calories}
             max={goals.calories}
@@ -64,38 +59,28 @@ export function Dashboard() {
             value={`${todayTotals.calories}`}
             variant="calories"
             remaining={`${remainingCalories} left`}
+            sizeVariant="large"
           />
-          <ProgressRing
-            progress={todayTotals.protein}
-            max={goals.protein}
-            label="Protein"
-            value={`${todayTotals.protein}g`}
-            variant="protein"
-            remaining={`${remainingProtein}g left`}
-          />
-          <ProgressRing
-            progress={todayTotals.cost}
-            max={goals.budget}
-            label="Spent"
-            value={`$${todayTotals.cost.toFixed(2)}`}
-            variant="money"
-            remaining={`$${remainingBudget.toFixed(2)} left`}
-          />
+          <div className="flex justify-around w-full">
+            <ProgressRing
+              progress={todayTotals.protein}
+              max={goals.protein}
+              label="Protein"
+              value={`${todayTotals.protein}g`}
+              variant="protein"
+              remaining={`${remainingProtein}g left`}
+            />
+            <ProgressRing
+              progress={todayTotals.cost}
+              max={goals.budget}
+              label="Spent"
+              value={`$${todayTotals.cost.toFixed(2)}`}
+              variant="money"
+              remaining={`$${remainingBudget.toFixed(2)} left`}
+            />
+          </div>
         </div>
       </div>
-
-      {/* Daily Insight Card */}
-      {todayTotals.protein > 0 && (
-        <div className="glass-card p-4 mt-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground">Daily Insight</span>
-          </div>
-          <p className="text-lg font-bold text-foreground mt-1">
-            ${costPerProtein.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">per 100g protein</span>
-          </p>
-        </div>
-      )}
 
       <div className="mt-3 glass-card p-4">
         <h3 className="text-sm font-semibold text-muted-foreground mb-3">
@@ -119,7 +104,7 @@ export function Dashboard() {
                   <p className="text-xs text-muted-foreground">
                     <span className="text-progress-calories">{log.calories} cal</span>
                     {" • "}
-                    <span className="text-progress-protein">{log.protein}g</span>
+                    <span className="text-progress-protein">{log.protein}g protein</span>
                     {" • "}
                     <span className="text-progress-money">${log.cost.toFixed(2)}</span>
                   </p>

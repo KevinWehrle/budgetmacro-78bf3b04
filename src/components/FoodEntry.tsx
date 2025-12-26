@@ -96,6 +96,23 @@ export function FoodEntry() {
     }
   });
 
+  // Fetch all pantry items for AI context
+  const { data: allPantryItems = [] } = useQuery({
+    queryKey: ['all-pantry-items', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('pantry_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+      
+      if (error) throw error;
+      return data as PantryItem[];
+    },
+    enabled: !!user
+  });
+
   const handleAISubmit = async () => {
     if (!input.trim()) {
       toast.error("Please describe what you ate");
@@ -106,7 +123,10 @@ export function FoodEntry() {
 
     try {
       const { data, error } = await supabase.functions.invoke('analyze-food', {
-        body: { foodDescription: input.trim() }
+        body: { 
+          foodDescription: input.trim(),
+          pantryItems: allPantryItems // Pass pantry data for context
+        }
       });
 
       if (error) {
@@ -556,9 +576,9 @@ export function FoodEntry() {
                     <div>
                       <h4 className="font-semibold text-foreground">{item.name}</h4>
                       <div className="flex gap-3 mt-1 text-sm">
-                        <span className="text-calories">{item.calories_per_serving} cal</span>
-                        <span className="text-protein">{item.protein_per_serving}g</span>
-                        <span className="text-spent">${costPerServing.toFixed(2)}</span>
+                        <span className="text-progress-calories">{item.calories_per_serving} cal</span>
+                        <span className="text-progress-protein">{item.protein_per_serving}g protein</span>
+                        <span className="text-progress-money">${costPerServing.toFixed(2)}</span>
                       </div>
                     </div>
                     <div className="text-right">

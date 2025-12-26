@@ -122,7 +122,7 @@ serve(async (req) => {
       }
     }
 
-    const { foodDescription } = await req.json();
+    const { foodDescription, pantryItems: userPantryItems } = await req.json();
 
     // Input validation
     if (!foodDescription || typeof foodDescription !== 'string') {
@@ -146,6 +146,16 @@ serve(async (req) => {
         JSON.stringify({ error: 'Food description too long (max 500 characters)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Build pantry context for AI
+    let pantryContext = '';
+    if (userPantryItems && Array.isArray(userPantryItems) && userPantryItems.length > 0) {
+      pantryContext = `\n\nThe user has these items in their pantry with known prices:\n${
+        userPantryItems.map((item: any) => 
+          `- ${item.name}: $${(item.total_cost / item.total_servings).toFixed(2)} per ${item.serving_unit}, ${item.protein_per_serving}g protein, ${item.calories_per_serving} cal per ${item.serving_unit}`
+        ).join('\n')
+      }\n\nIf the user's food matches any pantry items, use those exact prices and nutrition values. Otherwise estimate based on typical prices.`;
     }
 
     // Sanitize input to prevent prompt injection attacks
@@ -204,7 +214,7 @@ Consider:
 - If it sounds like home cooking, use grocery store prices
 - Be realistic about portion sizes
 - Use average US prices as of 2024
-
+${pantryContext}
 Examples:
 - "3 eggs" -> {"calories": 216, "protein": 18, "cost": 1.05}
 - "chipotle burrito bowl" -> {"calories": 850, "protein": 45, "cost": 11.50}

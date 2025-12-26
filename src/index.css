@@ -38,8 +38,8 @@
 
     /* Progress colors - modern palette */
     --progress-calories: 38 92% 50%;
-    --progress-protein: 160 84% 39%;
-    --progress-money: 258 90% 66%;
+    --progress-protein: 258 90% 66%;
+    --progress-money: 160 84% 45%;
 
     --sidebar-background: 0 0% 96%;
     --sidebar-foreground: 0 0% 10%;
@@ -82,8 +82,8 @@
 
     /* Progress colors - vibrant modern palette */
     --progress-calories: 38 92% 50%;
-    --progress-protein: 160 84% 45%;
-    --progress-money: 258 90% 66%;
+    --progress-protein: 258 90% 70%;
+    --progress-money: 160 84% 50%;
 
     --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 0 0% 96%;

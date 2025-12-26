@@ -9,6 +9,7 @@ interface ProgressRingProps {
   value: string;
   variant: "calories" | "protein" | "money";
   remaining?: string;
+  sizeVariant?: "default" | "large";
 }
 
 const variantColors = {
@@ -29,14 +30,19 @@ const variantColors = {
 export function ProgressRing({
   progress,
   max,
-  size = 100,
-  strokeWidth = 10,
+  size: customSize,
+  strokeWidth: customStrokeWidth,
   label,
   value,
   variant,
   remaining,
+  sizeVariant = "default",
 }: ProgressRingProps) {
   const [animatedProgress, setAnimatedProgress] = useState(0);
+  
+  // Determine size based on sizeVariant
+  const size = customSize ?? (sizeVariant === "large" ? 140 : 100);
+  const strokeWidth = customStrokeWidth ?? (sizeVariant === "large" ? 12 : 10);
   
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
