@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Info, TrendingUp, Gauge, Trophy, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Info, TrendingUp, Gauge, Trophy, Store as StoreIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,12 +12,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 interface PantryItem {
   id: string;
   name: string;
+  store_id: string | null;
   total_cost: number;
+  total_weight: number | null;
+  protein_per_100g: number | null;
+  calories_per_100g: number | null;
   total_servings: number;
   current_servings: number;
   protein_per_serving: number;
   calories_per_serving: number;
   is_out_of_stock: boolean;
+}
+
+interface Store {
+  id: string;
+  name: string;
 }
 
 interface AIRecommendation {
@@ -44,24 +53,22 @@ export function ProInsights() {
         .eq('user_id', user.id)
         .eq('is_out_of_stock', false);
       if (error) throw error;
-      return data as PantryItem[];
+      return (data || []) as unknown as PantryItem[];
     },
     enabled: !!user
   });
 
-  // Fetch AI recommendations
-  const { data: recommendations = [] } = useQuery({
-    queryKey: ['ai-recommendations', user?.id],
+  // Fetch stores
+  const { data: stores = [] } = useQuery({
+    queryKey: ['stores', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
-        .from('ai_recommendations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
+        .from('stores')
+        .select('id, name')
+        .eq('user_id', user.id);
       if (error) throw error;
-      return data as AIRecommendation[];
+      return (data || []) as unknown as Store[];
     },
     enabled: !!user
   });
@@ -112,14 +119,32 @@ export function ProInsights() {
   // Calculate Top Value Foods (lowest cost per gram of protein)
   const getTopValueFoods = () => {
     const itemsWithValue = pantryItems
-      .filter(item => item.protein_per_serving > 0 && item.total_servings > 0)
+      .filter(item => {
+        // Check if item has protein data (either per serving or per 100g)
+        const hasProtein = (item.protein_per_serving && item.protein_per_serving > 0) ||
+                          (item.protein_per_100g && item.protein_per_100g > 0);
+        return hasProtein;
+      })
       .map(item => {
-        const costPerServing = item.total_cost / item.total_servings;
-        const costPerGramProtein = costPerServing / item.protein_per_serving;
+        let costPerGramProtein: number;
+        let proteinValue: number;
+        
+        // Weight-based calculation
+        if (item.total_weight && item.total_weight > 0 && item.protein_per_100g) {
+          const costPer100g = item.total_cost / (item.total_weight / 100);
+          costPerGramProtein = costPer100g / item.protein_per_100g;
+          proteinValue = item.protein_per_100g;
+        } else {
+          // Servings-based calculation
+          const costPerServing = item.total_cost / (item.total_servings || 1);
+          costPerGramProtein = costPerServing / (item.protein_per_serving || 1);
+          proteinValue = item.protein_per_serving;
+        }
+        
         return {
           name: item.name,
-          costPerGramProtein: costPerGramProtein,
-          proteinPerServing: item.protein_per_serving
+          costPerGramProtein,
+          proteinPerServing: proteinValue
         };
       })
       .sort((a, b) => a.costPerGramProtein - b.costPerGramProtein)
@@ -128,9 +153,53 @@ export function ProInsights() {
     return itemsWithValue;
   };
 
+  // Calculate Top Stores by Price Efficiency
+  const getTopStores = () => {
+    if (stores.length === 0) return [];
+    
+    const storeStats = stores.map(store => {
+      const storeItems = pantryItems.filter(item => item.store_id === store.id);
+      if (storeItems.length === 0) return null;
+      
+      // Calculate average cost per gram of protein for this store
+      let totalCostPerGram = 0;
+      let validItems = 0;
+      
+      storeItems.forEach(item => {
+        let costPerGramProtein: number | null = null;
+        
+        if (item.total_weight && item.total_weight > 0 && item.protein_per_100g && item.protein_per_100g > 0) {
+          const costPer100g = item.total_cost / (item.total_weight / 100);
+          costPerGramProtein = costPer100g / item.protein_per_100g;
+        } else if (item.protein_per_serving && item.protein_per_serving > 0 && item.total_servings > 0) {
+          const costPerServing = item.total_cost / item.total_servings;
+          costPerGramProtein = costPerServing / item.protein_per_serving;
+        }
+        
+        if (costPerGramProtein !== null && isFinite(costPerGramProtein)) {
+          totalCostPerGram += costPerGramProtein;
+          validItems++;
+        }
+      });
+      
+      if (validItems === 0) return null;
+      
+      return {
+        name: store.name,
+        avgCostPerGram: totalCostPerGram / validItems,
+        itemCount: storeItems.length
+      };
+    }).filter(Boolean) as { name: string; avgCostPerGram: number; itemCount: number }[];
+    
+    return storeStats
+      .sort((a, b) => a.avgCostPerGram - b.avgCostPerGram)
+      .slice(0, 3);
+  };
+
   const efficiencyData = getEfficiencyData();
   const pantryRunway = getPantryRunway();
   const topValueFoods = getTopValueFoods();
+  const topStores = getTopStores();
   const hasEfficiencyData = efficiencyData.some(d => d.value !== null);
 
   const infoDescriptions: Record<string, { title: string; description: string }> = {
@@ -145,6 +214,10 @@ export function ProInsights() {
     roi: {
       title: 'Top Value Foods',
       description: 'Ranks your pantry items by cost-effectiveness for protein. Shows which foods give you the most protein per dollar spent. Lower cost per gram of protein = better value for hitting your protein goals on a budget.'
+    },
+    stores: {
+      title: 'Top Stores by Efficiency',
+      description: 'Compares stores based on average cost per gram of protein across all items purchased there. Lower values indicate stores where you get more protein value for your money.'
     }
   };
 
@@ -304,38 +377,43 @@ export function ProInsights() {
         )}
       </Card>
 
-      {/* Smart AI Suggestions */}
+      {/* Top Stores by Efficiency */}
       <Card className="p-4 bg-[#0a0a0a]/80 border border-white/10 backdrop-blur-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 rounded-lg bg-primary/20">
-            <Sparkles className="w-4 h-4 text-primary" />
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <StoreIcon className="w-4 h-4 text-[#10B981]" />
+            <span className="text-sm font-medium text-foreground">Top 3 Stores by Price Efficiency</span>
           </div>
-          <span className="text-sm font-medium text-foreground">Smart AI Suggestions</span>
+          <button 
+            onClick={() => setInfoModal('stores')}
+            className="p-1 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <Info className="w-4 h-4 text-muted-foreground" />
+          </button>
         </div>
-        {recommendations.length === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground/60">
-              No AI suggestions yet
-            </p>
-            <p className="text-xs text-muted-foreground/40 mt-1">
-              Insights will appear here from your AI model
-            </p>
-          </div>
+        {topStores.length === 0 ? (
+          <p className="text-sm text-muted-foreground/60 text-center py-4">
+            Add pantry items with store info to compare store efficiency
+          </p>
         ) : (
           <div className="space-y-2">
-            {recommendations.map((rec) => (
+            {topStores.map((store, index) => (
               <div 
-                key={rec.id}
-                className="p-3 rounded-lg bg-white/5 border border-white/5"
+                key={store.name}
+                className="flex items-center justify-between p-2 rounded-lg bg-white/5"
               >
-                <p className="text-sm text-foreground">{rec.insight_text}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-xs text-muted-foreground">
-                    {format(new Date(rec.created_at), 'MMM d, h:mm a')}
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-bold ${index === 0 ? 'text-[#10B981]' : 'text-muted-foreground'}`}>
+                    #{index + 1}
                   </span>
-                  <span className="text-xs text-[#10B981]">
-                    {Math.round(rec.confidence_score * 100)}% confidence
+                  <span className="text-sm text-foreground">{store.name}</span>
+                  <span className="text-xs text-muted-foreground">({store.itemCount} items)</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-medium text-[#10B981]">
+                    ${store.avgCostPerGram.toFixed(3)}
                   </span>
+                  <span className="text-xs text-muted-foreground">/g protein</span>
                 </div>
               </div>
             ))}
