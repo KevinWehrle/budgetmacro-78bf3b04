@@ -294,8 +294,9 @@ export function ProInsights() {
                 </div>
                 <div className="text-right">
                   <span className="text-sm font-medium text-[#8B5CF6]">
-                    ${food.costPerGramProtein.toFixed(3)}/g
+                    ${food.costPerGramProtein.toFixed(3)}
                   </span>
+                  <span className="text-xs text-muted-foreground">/g protein</span>
                 </div>
               </div>
             ))}
