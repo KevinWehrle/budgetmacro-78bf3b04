@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { ProgressRing } from "./ProgressRing";
-import { Zap, Trash2 } from "lucide-react";
+import { Zap, Trash2, Edit2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,10 +15,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+
+interface FoodLog {
+  id: string;
+  description: string;
+  calories: number;
+  protein: number;
+  cost: number;
+  timestamp: Date;
+}
+
+// Helper to limit cost to 2 decimal places
+const formatCostInput = (value: string): string => {
+  const match = value.match(/^\d*\.?\d{0,2}/);
+  return match ? match[0] : '';
+};
 
 export function Dashboard() {
-  const { todayTotals, goals, foodLogs, deleteFoodLog } = useApp();
+  const { todayTotals, goals, foodLogs, deleteFoodLog, updateFoodLog } = useApp();
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; description: string } | null>(null);
+  const [editingEntry, setEditingEntry] = useState<FoodLog | null>(null);
+  const [editForm, setEditForm] = useState({
+    description: "",
+    calories: "",
+    protein: "",
+    cost: ""
+  });
 
   // Get today's logs only
   const todayLogs = foodLogs.filter((log) => {
@@ -36,6 +66,34 @@ export function Dashboard() {
     }
   };
 
+  const openEdit = (log: FoodLog) => {
+    setEditingEntry(log);
+    setEditForm({
+      description: log.description,
+      calories: log.calories.toString(),
+      protein: log.protein.toString(),
+      cost: log.cost.toFixed(2)
+    });
+  };
+
+  const handleCostChange = (value: string) => {
+    setEditForm({ ...editForm, cost: formatCostInput(value) });
+  };
+
+  const handleEditSave = () => {
+    if (!editingEntry) return;
+    
+    updateFoodLog(editingEntry.id, {
+      description: editForm.description,
+      calories: parseInt(editForm.calories) || 0,
+      protein: parseInt(editForm.protein) || 0,
+      cost: parseFloat(editForm.cost) || 0
+    });
+    
+    setEditingEntry(null);
+    setEditForm({ description: "", calories: "", protein: "", cost: "" });
+  };
+
   // Calculate remaining values
   const remainingCalories = Math.max(0, goals.calories - todayTotals.calories);
   const remainingProtein = Math.max(0, goals.protein - todayTotals.protein);
@@ -51,7 +109,7 @@ export function Dashboard() {
       </div>
 
       <div className="glass-card p-5">
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col gap-4">
           <ProgressRing
             progress={todayTotals.calories}
             max={goals.calories}
@@ -59,26 +117,23 @@ export function Dashboard() {
             value={`${todayTotals.calories}`}
             variant="calories"
             remaining={`${remainingCalories} left`}
-            sizeVariant="large"
           />
-          <div className="flex justify-around w-full">
-            <ProgressRing
-              progress={todayTotals.protein}
-              max={goals.protein}
-              label="Protein"
-              value={`${todayTotals.protein}g`}
-              variant="protein"
-              remaining={`${remainingProtein}g left`}
-            />
-            <ProgressRing
-              progress={todayTotals.cost}
-              max={goals.budget}
-              label="Spent"
-              value={`$${todayTotals.cost.toFixed(2)}`}
-              variant="money"
-              remaining={`$${remainingBudget.toFixed(2)} left`}
-            />
-          </div>
+          <ProgressRing
+            progress={todayTotals.protein}
+            max={goals.protein}
+            label="Protein"
+            value={`${todayTotals.protein}g`}
+            variant="protein"
+            remaining={`${remainingProtein}g left`}
+          />
+          <ProgressRing
+            progress={todayTotals.cost}
+            max={goals.budget}
+            label="Spent"
+            value={`$${todayTotals.cost.toFixed(2)}`}
+            variant="money"
+            remaining={`$${remainingBudget.toFixed(2)} left`}
+          />
         </div>
       </div>
 
@@ -109,20 +164,79 @@ export function Dashboard() {
                     <span className="text-progress-money">${log.cost.toFixed(2)}</span>
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                  onClick={() => setDeleteConfirm({ id: log.id, description: log.description })}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => openEdit(log)}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => setDeleteConfirm({ id: log.id, description: log.description })}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
+      {/* Edit Entry Dialog */}
+      <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Edit Entry</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Description</Label>
+              <Input
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Calories</Label>
+                <Input
+                  type="number"
+                  value={editForm.calories}
+                  onChange={(e) => setEditForm({ ...editForm, calories: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Protein (g)</Label>
+                <Input
+                  type="number"
+                  value={editForm.protein}
+                  onChange={(e) => setEditForm({ ...editForm, protein: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Cost ($)</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={editForm.cost}
+                  onChange={(e) => handleCostChange(e.target.value)}
+                />
+              </div>
+            </div>
+            <Button onClick={handleEditSave} className="w-full">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
         <AlertDialogContent className="glass-card">
           <AlertDialogHeader>
