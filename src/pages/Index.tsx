@@ -3,10 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { Dashboard } from "@/components/Dashboard";
 import { FoodEntry } from "@/components/FoodEntry";
-import { ValueFoods } from "@/components/ValueFoods";
-import { History } from "@/components/History";
 import { MenuPage } from "@/components/MenuPage";
 import { Pantry } from "@/components/Pantry";
+import { ProInsights } from "@/components/ProInsights";
 
 import { useApp } from "@/context/AppContext";
 
@@ -40,7 +39,7 @@ const Index = () => {
         {activeTab === "dashboard" && <Dashboard />}
         {activeTab === "add" && <FoodEntry />}
         {activeTab === "pantry" && <Pantry />}
-        {activeTab === "history" && <History />}
+        {activeTab === "insights" && <ProInsights />}
         {activeTab === "menu" && <MenuPage />}
       </main>
 

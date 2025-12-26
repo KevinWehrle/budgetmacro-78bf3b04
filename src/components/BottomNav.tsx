@@ -1,4 +1,4 @@
-import { Home, PlusCircle, List, Calendar, Menu, Package } from "lucide-react";
+import { Home, PlusCircle, LayoutDashboard, Menu, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavProps {
@@ -10,7 +10,7 @@ const navItems = [
   { id: "dashboard", icon: Home, label: "Home" },
   { id: "pantry", icon: Package, label: "Pantry" },
   { id: "add", icon: PlusCircle, label: "Add" },
-  { id: "history", icon: Calendar, label: "History" },
+  { id: "insights", icon: LayoutDashboard, label: "Pro Insights" },
   { id: "menu", icon: Menu, label: "Menu" },
 ];
 
