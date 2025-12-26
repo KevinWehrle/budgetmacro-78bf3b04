@@ -472,7 +472,7 @@ export function FoodEntry() {
   // Mode Selection Screen
   if (mode === 'select') {
     return (
-      <div className="px-4 py-6 space-y-6 pb-24">
+      <div className="px-4 py-6 space-y-6 pb-24 slide-up">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-2">Log Food</h1>
           <p className="text-sm text-muted-foreground">Choose how you'd like to log your meal</p>
@@ -546,7 +546,7 @@ export function FoodEntry() {
   // Pantry Selection Screen
   if (mode === 'pantry') {
     return (
-      <div className="px-4 py-6 space-y-6 pb-24">
+      <div className="px-4 py-6 space-y-6 pb-24 slide-up">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setMode('select')}>
             ← Back
@@ -673,7 +673,7 @@ export function FoodEntry() {
   // Manual Entry Screen
   if (mode === 'manual') {
     return (
-      <div className="px-4 py-6 space-y-6 pb-24">
+      <div className="px-4 py-6 space-y-6 pb-24 slide-up">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setMode('select')}>
             ← Back
@@ -736,7 +736,7 @@ export function FoodEntry() {
 
   // AI Entry Screen
   return (
-    <div className="px-4 py-6 space-y-6 pb-24">
+    <div className="px-4 py-6 space-y-6 pb-24 slide-up">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => setMode('select')}>
           ← Back

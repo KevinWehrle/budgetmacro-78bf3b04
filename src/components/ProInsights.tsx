@@ -149,7 +149,7 @@ export function ProInsights() {
   };
 
   return (
-    <div className="px-4 py-6 space-y-6 pb-24">
+    <div className="px-4 py-6 space-y-6 pb-24 slide-up">
       <div className="flex items-center gap-2 mb-4">
         <LayoutDashboard className="w-5 h-5 text-primary" />
         <h1 className="text-xl font-bold text-foreground">
