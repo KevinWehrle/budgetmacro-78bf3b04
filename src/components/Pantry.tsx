@@ -167,7 +167,7 @@ export const Pantry = () => {
   const outOfStockItems = pantryItems.filter(i => i.is_out_of_stock);
 
   return (
-    <div className="px-4 py-6 space-y-6 pb-24">
+    <div className="px-4 py-6 space-y-6 pb-24 slide-up">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Your Pantry</h2>
