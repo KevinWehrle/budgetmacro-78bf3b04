@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_recommendations: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          id: string
+          insight_text: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number
+          created_at?: string
+          id?: string
+          insight_text: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          id?: string
+          insight_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       api_rate_limits: {
         Row: {
           endpoint: string
